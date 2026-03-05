@@ -1,14 +1,57 @@
-import { db, storage } from './firebase';
+import { db, storage, auth, googleProvider } from './firebase';
 import { ref as dbRef, set, get, child, update, remove, onValue, off } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { Quiz, Person, Round, Player, Vote } from './types';
 import { v4 as uuidv4 } from 'uuid';
 
-const QUIZ_ID = 'main-quiz';
-const quizRef = dbRef(db, `quizzes/${QUIZ_ID}`);
+// --- Auth API ---
 
-// Listener
-export function subscribeToQuiz(callback: (quiz: Quiz | null) => void) {
+export function onAuthChange(callback: (user: User | null) => void) {
+    return onAuthStateChanged(auth, callback);
+}
+
+export async function loginWithGoogle() {
+    try {
+        const result = await signInWithPopup(auth, googleProvider);
+        return result.user;
+    } catch (error) {
+        console.error("Login failed:", error);
+        throw error;
+    }
+}
+
+export async function logout() {
+    await signOut(auth);
+}
+
+// --- Database API ---
+
+// List quizzes for a specific owner
+export async function listQuizzes(ownerId?: string): Promise<Quiz[]> {
+    const quizzesRef = dbRef(db, 'quizzes');
+    const snapshot = await get(quizzesRef);
+    if (!snapshot.exists()) return [];
+
+    const data = snapshot.val();
+    let quizzes = Object.values(data).map((q: any) => ({
+        ...q,
+        persons: q.persons ? Object.values(q.persons) : [],
+        players: q.players ? Object.values(q.players) : [],
+        rounds: q.rounds ? Object.values(q.rounds) : [],
+    }));
+
+    // Filter by owner if provided
+    if (ownerId) {
+        quizzes = quizzes.filter((q: any) => q.ownerId === ownerId);
+    }
+
+    return quizzes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) as Quiz[];
+}
+
+// Listener for a specific quiz
+export function subscribeToQuiz(quizId: string, callback: (quiz: Quiz | null) => void) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     onValue(quizRef, (snapshot) => {
         if (!snapshot.exists()) {
             callback(null);
@@ -19,10 +62,11 @@ export function subscribeToQuiz(callback: (quiz: Quiz | null) => void) {
 
         // Convert Firebase objects to arrays for easier mapping
         const quiz: Quiz = {
-            id: data.id || QUIZ_ID,
+            id: data.id || quizId,
             title: data.title || '',
             status: data.status || 'draft',
             currentRoundIndex: data.currentRoundIndex || 0,
+            ownerId: data.ownerId || '',
             persons: data.persons ? (Object.values(data.persons) as Person[]).sort((a: any, b: any) => a.orderIndex - b.orderIndex) : [],
             players: data.players ? (Object.values(data.players) as Player[]) : [],
             rounds: data.rounds ? (Object.values(data.rounds) as Round[]) : [],
@@ -35,19 +79,25 @@ export function subscribeToQuiz(callback: (quiz: Quiz | null) => void) {
 }
 
 // Admin API
-export async function createQuiz(title: string) {
+export async function createQuiz(title: string, ownerId: string): Promise<string> {
+    const id = uuidv4();
+    const quizRef = dbRef(db, `quizzes/${id}`);
     await set(quizRef, {
-        id: QUIZ_ID,
+        id,
         title,
         status: 'draft',
         currentRoundIndex: 0,
+        ownerId,
+        createdAt: Date.now(),
         persons: {},
         players: {},
         rounds: {}
     });
+    return id;
 }
 
-export async function addPerson(name: string, caricatureUrl: string, realPhotoUrl: string) {
+export async function addPerson(quizId: string, name: string, caricatureUrl: string, realPhotoUrl: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     const quizSnapshot = await get(quizRef);
     if (!quizSnapshot.exists()) return;
 
@@ -66,7 +116,8 @@ export async function addPerson(name: string, caricatureUrl: string, realPhotoUr
     await set(child(quizRef, `persons/${id}`), person);
 }
 
-export async function removePerson(personId: string) {
+export async function removePerson(quizId: string, personId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     await remove(child(quizRef, `persons/${personId}`));
 
     // Reorder remaining
@@ -86,7 +137,8 @@ export async function removePerson(personId: string) {
     await update(quizRef, updates);
 }
 
-export async function publishQuiz() {
+export async function publishQuiz(quizId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     const quizSnapshot = await get(quizRef);
     if (!quizSnapshot.exists()) return;
 
@@ -112,12 +164,14 @@ export async function publishQuiz() {
     });
 }
 
-export async function deleteQuiz() {
+export async function deleteQuiz(quizId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     await remove(quizRef);
 }
 
 // Host API
-export async function startRound() {
+export async function startRound(quizId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     const quizSnapshot = await get(quizRef);
     if (!quizSnapshot.exists()) return;
 
@@ -131,7 +185,8 @@ export async function startRound() {
     });
 }
 
-export async function revealRound() {
+export async function revealRound(quizId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     const quizSnapshot = await get(quizRef);
     if (!quizSnapshot.exists()) return;
 
@@ -163,7 +218,8 @@ export async function revealRound() {
     }
 }
 
-export async function nextRound() {
+export async function nextRound(quizId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     const quizSnapshot = await get(quizRef);
     if (!quizSnapshot.exists()) return;
 
@@ -175,11 +231,13 @@ export async function nextRound() {
     });
 }
 
-export async function finishQuiz() {
+export async function finishQuiz(quizId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     await update(quizRef, { status: 'finished' });
 }
 
-export async function resetQuiz() {
+export async function resetQuiz(quizId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     const quizSnapshot = await get(quizRef);
     if (!quizSnapshot.exists()) return;
 
@@ -208,6 +266,7 @@ export async function resetQuiz() {
 
 // Player API
 export async function joinQuiz(displayName: string, quizId: string): Promise<Player | null> {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     const qs = await get(quizRef);
     if (!qs.exists()) return null;
 
@@ -230,7 +289,8 @@ export async function joinQuiz(displayName: string, quizId: string): Promise<Pla
     return player;
 }
 
-export async function submitVote(playerId: string, guessedPersonId: string) {
+export async function submitVote(quizId: string, playerId: string, guessedPersonId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
     const qs = await get(quizRef);
     if (!qs.exists()) return;
 

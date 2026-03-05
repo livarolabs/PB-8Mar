@@ -32,6 +32,7 @@ export interface Quiz {
   title: string;
   status: 'draft' | 'live' | 'finished';
   currentRoundIndex: number;
+  ownerId: string;
   persons: Person[];
   rounds: Round[];
   players: Player[];

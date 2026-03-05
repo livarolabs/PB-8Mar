@@ -1,43 +1,103 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { subscribeToQuiz, createQuiz, addPerson, removePerson, publishQuiz, deleteQuiz, uploadImage } from '@/lib/db';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { subscribeToQuiz, createQuiz, addPerson, removePerson, publishQuiz, deleteQuiz, uploadImage, listQuizzes, onAuthChange, loginWithGoogle, logout } from '@/lib/db';
 import { Quiz } from '@/lib/types';
+import { User } from 'firebase/auth';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 
 export default function AdminPage() {
+    const searchParams = useSearchParams();
+    const router = useRouter();
+    const quizId = searchParams.get('quizId');
+
+    const [user, setUser] = useState<User | null>(null);
+    const [quizzes, setQuizzes] = useState<Quiz[]>([]);
     const [quiz, setQuiz] = useState<Quiz | null>(null);
     const [baseUrl, setBaseUrl] = useState('');
-    const [quizTitle, setQuizTitle] = useState('Women\'s Day 2026 💐');
+    const [newQuizTitle, setNewQuizTitle] = useState('New Quiz 💐');
     const [personName, setPersonName] = useState('');
     const [caricatureUrl, setCaricatureUrl] = useState('');
     const [realPhotoUrl, setRealPhotoUrl] = useState('');
     const [uploading, setUploading] = useState<'caricature' | 'real' | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+
     const caricatureInputRef = useRef<HTMLInputElement>(null);
     const realPhotoInputRef = useRef<HTMLInputElement>(null);
 
+    // Auth Listener
     useEffect(() => {
-        setBaseUrl(window.location.origin);
-        const unsubscribe = subscribeToQuiz((q) => {
-            setQuiz(q);
+        const unsubscribe = onAuthChange((u) => {
+            setUser(u);
+            if (!u) {
+                setLoading(false);
+            }
         });
         return () => unsubscribe();
     }, []);
+
+    // Load quiz list or subscribe to specific quiz
+    useEffect(() => {
+        setBaseUrl(window.location.origin);
+        if (!user) return;
+
+        if (!quizId) {
+            setLoading(true);
+            listQuizzes(user.uid).then(list => {
+                setQuizzes(list);
+                setLoading(false);
+            });
+            return;
+        }
+
+        const unsubscribe = subscribeToQuiz(quizId, (q) => {
+            // Basic security: Check if current user is owner
+            if (q && q.ownerId && q.ownerId !== user.uid) {
+                setError("You don't have permission to edit this quiz.");
+                setQuiz(null);
+            } else {
+                setQuiz(q);
+            }
+            setLoading(false);
+        });
+        return () => unsubscribe();
+    }, [quizId, user]);
 
     const showError = (msg: string) => {
         setError(msg);
         setTimeout(() => setError(null), 4000);
     };
 
-    const handleCreateQuiz = useCallback(async () => {
-        if (!quizTitle.trim()) return;
+    const handleLogin = async () => {
         try {
-            await createQuiz(quizTitle.trim());
+            setLoading(true);
+            await loginWithGoogle();
+        } catch (err: any) {
+            showError(`Login failed: ${err.message}`);
+            setLoading(false);
+        }
+    };
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+            router.push('/admin');
+        } catch (err: any) {
+            showError(`Logout failed: ${err.message}`);
+        }
+    };
+
+    const handleCreateQuiz = useCallback(async () => {
+        if (!newQuizTitle.trim() || !user) return;
+        try {
+            const id = await createQuiz(newQuizTitle.trim(), user.uid);
+            router.push(`/admin?quizId=${id}`);
         } catch (err: any) {
             showError(`Failed to create quiz: ${err.message}`);
         }
-    }, [quizTitle]);
+    }, [newQuizTitle, router, user]);
 
     const handleUpload = useCallback(async (file: File, type: 'caricature' | 'real') => {
         setUploading(type);
@@ -56,9 +116,9 @@ export default function AdminPage() {
     }, []);
 
     const handleAddPerson = useCallback(async () => {
-        if (!personName.trim() || !caricatureUrl || !realPhotoUrl) return;
+        if (!quizId || !personName.trim() || !caricatureUrl || !realPhotoUrl) return;
         try {
-            await addPerson(personName.trim(), caricatureUrl, realPhotoUrl);
+            await addPerson(quizId, personName.trim(), caricatureUrl, realPhotoUrl);
             setPersonName('');
             setCaricatureUrl('');
             setRealPhotoUrl('');
@@ -67,46 +127,181 @@ export default function AdminPage() {
         } catch (err: any) {
             showError(`Failed to add person: ${err.message}`);
         }
-    }, [personName, caricatureUrl, realPhotoUrl]);
+    }, [quizId, personName, caricatureUrl, realPhotoUrl]);
 
     const handleRemovePerson = useCallback(async (personId: string) => {
+        if (!quizId) return;
         try {
-            await removePerson(personId);
+            await removePerson(quizId, personId);
         } catch (err: any) {
             showError(`Failed to remove person: ${err.message}`);
         }
-    }, []);
+    }, [quizId]);
 
     const handlePublish = useCallback(async () => {
+        if (!quizId) return;
         try {
-            await publishQuiz();
+            await publishQuiz(quizId);
         } catch (err: any) {
             showError(`Failed to publish: ${err.message}`);
         }
-    }, []);
+    }, [quizId]);
 
-    const handleDeleteQuiz = useCallback(async () => {
-        if (!confirm('Delete this quiz and start over?')) return;
+    const handleDeleteQuiz = useCallback(async (idToDelete?: string) => {
+        const id = idToDelete || quizId;
+        if (!id) return;
+        if (!confirm('Delete this quiz and all its data?')) return;
         try {
-            await deleteQuiz();
+            await deleteQuiz(id);
+            if (id === quizId) {
+                router.push('/admin');
+            } else {
+                setQuizzes(prev => prev.filter(q => q.id !== id));
+            }
         } catch (err: any) {
             showError(`Failed to delete quiz: ${err.message}`);
         }
-    }, []);
+    }, [quizId, router]);
 
     const joinUrl = quiz && baseUrl
         ? `${baseUrl}/play/${quiz.id}`
         : '';
 
-    const hostUrl = baseUrl
-        ? `${baseUrl}/host`
+    const hostUrl = quiz && baseUrl
+        ? `${baseUrl}/host?quizId=${quiz.id}`
         : '';
+
+    // ── LOADING ──────────────────────────────────────────────────
+    if (loading) {
+        return (
+            <div className="page-container">
+                <div className="waiting-dots"><span></span><span></span><span></span></div>
+            </div>
+        );
+    }
+
+    // ── AUTH SCREEN ──────────────────────────────────────────────
+    if (!user) {
+        return (
+            <div className="page-container">
+                <div className="animate-in" style={{ textAlign: 'center', marginTop: '10vh' }}>
+                    <div style={{ marginBottom: 24 }}>
+                        <span style={{ fontSize: 64 }}>💐</span>
+                    </div>
+                    <h1 className="page-title">Admin Dashboard</h1>
+                    <p className="page-subtitle">Please sign in with Google to manage your quizzes</p>
+                    <button className="btn btn-primary btn-large" onClick={handleLogin} style={{ display: 'inline-flex', alignItems: 'center', gap: 12 }}>
+                        Sign In with Google
+                    </button>
+                    {error && (
+                        <p style={{ color: '#ef4444', marginTop: 16, fontSize: 14 }}>{error}</p>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // ── DASHBOARD (List Quizzes) ─────────────────────────────────
+    if (!quizId) {
+        return (
+            <div className="page-container">
+                <div className="animate-in">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+                        <div>
+                            <h1 className="page-title" style={{ marginBottom: 4 }}>👑 Quiz Management</h1>
+                            <p style={{ color: 'var(--text-secondary)' }}>Welcome back, <span className="text-gradient" style={{ fontWeight: 700 }}>{user.displayName}</span></p>
+                        </div>
+                        <button className="btn btn-secondary" onClick={handleLogout} style={{ fontSize: 13 }}>
+                            Logout
+                        </button>
+                    </div>
+
+                    <div className="glass-card" style={{ marginBottom: 32 }}>
+                        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>Create New Quiz</h2>
+                        <div style={{ display: 'flex', gap: 12 }}>
+                            <input
+                                className="input"
+                                value={newQuizTitle}
+                                onChange={e => setNewQuizTitle(e.target.value)}
+                                placeholder="Quiz title..."
+                                onKeyDown={e => e.key === 'Enter' && handleCreateQuiz()}
+                            />
+                            <button className="btn btn-primary" onClick={handleCreateQuiz}>
+                                Create
+                            </button>
+                        </div>
+                    </div>
+
+                    <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>Your Quizzes</h2>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+                        {quizzes.length === 0 ? (
+                            <p style={{ color: 'var(--text-muted)' }}>No quizzes yet. Create your first one above!</p>
+                        ) : (
+                            quizzes.map(q => (
+                                <div key={q.id} className="glass-card" style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                                            <h3 style={{ fontSize: 18, fontWeight: 700 }}>{q.title}</h3>
+                                            <span style={{
+                                                fontSize: 10,
+                                                padding: '2px 8px',
+                                                borderRadius: 20,
+                                                background: q.status === 'live' ? 'rgba(52, 211, 153, 0.2)' : 'rgba(255,255,255,0.1)',
+                                                color: q.status === 'live' ? '#34d399' : 'var(--text-muted)',
+                                                textTransform: 'uppercase',
+                                                letterSpacing: 1
+                                            }}>
+                                                {q.status}
+                                            </span>
+                                        </div>
+                                        <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 16 }}>
+                                            {q.persons.length} rounds • {q.players.length} players
+                                        </p>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 8 }}>
+                                        <button className="btn btn-secondary" onClick={() => router.push(`/admin?quizId=${q.id}`)} style={{ flex: 1, fontSize: 13 }}>
+                                            Manage
+                                        </button>
+                                        <button className="btn btn-danger" onClick={() => handleDeleteQuiz(q.id)} style={{ padding: '8px 12px', fontSize: 12 }}>
+                                            ✕
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── EDITOR (Manage Specific Quiz) ────────────────────────────
+    if (!quiz) {
+        return (
+            <div className="page-container">
+                <div className="glass-card" style={{ textAlign: 'center' }}>
+                    <p style={{ marginBottom: 16 }}>{error || "Quiz not found or has been deleted."}</p>
+                    <button className="btn btn-primary" onClick={() => router.push('/admin')}>
+                        Back to Dashboard
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="page-container">
             <div className="animate-in">
-                <h1 className="page-title">👑 Quiz Admin</h1>
-                <p className="page-subtitle">Set up your Women&apos;s Day &quot;Guess Who&quot; quiz (Firebase Sync)</p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <button onClick={() => router.push('/admin')} style={{ background: 'none', border: 'none', color: 'var(--pink)', cursor: 'pointer', fontSize: 14 }}>
+                        ← Dashboard
+                    </button>
+                    <button className="btn btn-secondary" onClick={handleLogout} style={{ fontSize: 12 }}>
+                        Logout
+                    </button>
+                </div>
+                <h1 className="page-title">👑 {quiz.title}</h1>
+                <p className="page-subtitle">Configure rounds and manage publishing</p>
 
                 {error && (
                     <div style={{
@@ -122,40 +317,19 @@ export default function AdminPage() {
                     </div>
                 )}
 
-                {/* Step 1: Create Quiz */}
-                {!quiz && (
-                    <div className="glass-card" style={{ maxWidth: 500 }}>
-                        <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>
-                            Step 1: Create a Quiz
-                        </h2>
-                        <div style={{ display: 'flex', gap: 12 }}>
-                            <input
-                                className="input"
-                                value={quizTitle}
-                                onChange={e => setQuizTitle(e.target.value)}
-                                placeholder="Quiz title..."
-                                onKeyDown={e => e.key === 'Enter' && handleCreateQuiz()}
-                            />
-                            <button className="btn btn-primary" onClick={handleCreateQuiz}>
-                                Create
-                            </button>
-                        </div>
-                    </div>
-                )}
-
-                {/* Step 2: Add Persons */}
-                {quiz && quiz.status === 'draft' && (
+                {quiz.status === 'draft' && (
                     <>
+                        {/* Editor Header */}
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
                             <div>
                                 <h2 style={{ fontSize: 20, fontWeight: 700 }}>
-                                    &quot;{quiz.title}&quot;
+                                    Add Persons
                                 </h2>
                                 <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
                                     {quiz.persons.length} {quiz.persons.length === 1 ? 'person' : 'persons'} added
                                 </p>
                             </div>
-                            <button className="btn btn-danger" onClick={handleDeleteQuiz} style={{ fontSize: 12 }}>
+                            <button className="btn btn-danger" onClick={() => handleDeleteQuiz()} style={{ fontSize: 12 }}>
                                 Delete Quiz
                             </button>
                         </div>
@@ -308,10 +482,10 @@ export default function AdminPage() {
                     </>
                 )}
 
-                {/* Step 3: Published — Show QR + Links */}
+                {/* Published — Show QR + Links */}
                 {quiz && quiz.status !== 'draft' && (
                     <div style={{ textAlign: 'center' }}>
-                        <div className="glass-card" style={{ display: 'inline-block', marginBottom: 24 }}>
+                        <div className="glass-card" style={{ display: 'inline-block', marginBottom: 24, width: '100%', maxWidth: 500 }}>
                             <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>
                                 ✅ Quiz is Live!
                             </h2>
@@ -334,6 +508,9 @@ export default function AdminPage() {
                                     }}
                                 >
                                     📋 Copy Join Link
+                                </button>
+                                <button className="btn btn-danger" onClick={() => handleDeleteQuiz()} style={{ marginTop: 12, fontSize: 12 }}>
+                                    Delete Quiz Data
                                 </button>
                             </div>
                         </div>

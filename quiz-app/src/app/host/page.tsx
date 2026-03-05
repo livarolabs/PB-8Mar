@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { subscribeToQuiz, startRound, revealRound, nextRound, finishQuiz, resetQuiz } from '@/lib/db';
-import { Quiz, Person } from '@/lib/types';
+import { Quiz } from '@/lib/types';
 import Countdown from '@/components/Countdown';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 import Leaderboard from '@/components/Leaderboard';
@@ -44,6 +45,9 @@ function Confetti() {
 }
 
 export default function HostPage() {
+    const searchParams = useSearchParams();
+    const quizId = searchParams.get('quizId');
+
     const [quiz, setQuiz] = useState<Quiz | null>(null);
     const [baseUrl, setBaseUrl] = useState('');
     const [showConfetti, setShowConfetti] = useState(false);
@@ -51,11 +55,13 @@ export default function HostPage() {
 
     useEffect(() => {
         setBaseUrl(window.location.origin);
-        const unsubscribe = subscribeToQuiz((q) => {
+        if (!quizId) return;
+
+        const unsubscribe = subscribeToQuiz(quizId, (q) => {
             setQuiz(q);
         });
         return () => unsubscribe();
-    }, []);
+    }, [quizId]);
 
     // Check if voting has ended for current round
     useEffect(() => {
@@ -77,61 +83,78 @@ export default function HostPage() {
     }, [quiz]);
 
     const handleStartRound = useCallback(async () => {
+        if (!quizId) return;
         setVotingEnded(false);
         try {
-            await startRound();
+            await startRound(quizId);
         } catch (e) {
             console.error(e);
         }
-    }, []);
+    }, [quizId]);
 
     const handleReveal = useCallback(async () => {
+        if (!quizId) return;
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 4000);
         try {
-            await revealRound();
+            await revealRound(quizId);
         } catch (e) {
             console.error(e);
         }
-    }, []);
+    }, [quizId]);
 
     const handleNext = useCallback(async () => {
+        if (!quizId) return;
         try {
-            await nextRound();
+            await nextRound(quizId);
         } catch (e) {
             console.error(e);
         }
-    }, []);
+    }, [quizId]);
 
     const handleFinish = useCallback(async () => {
+        if (!quizId) return;
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 6000);
         try {
-            await finishQuiz();
+            await finishQuiz(quizId);
         } catch (e) {
             console.error(e);
         }
-    }, []);
+    }, [quizId]);
 
     const handleReset = useCallback(async () => {
+        if (!quizId) return;
         if (!confirm('Reset all rounds and scores?')) return;
         try {
-            await resetQuiz();
+            await resetQuiz(quizId);
         } catch (e) {
             console.error(e);
         }
-    }, []);
+    }, [quizId]);
+
+    if (!quizId) {
+        return (
+            <div className="host-screen">
+                <div className="waiting-state">
+                    <h1 style={{ fontFamily: 'Outfit', fontSize: 36, fontWeight: 800 }}>
+                        <span className="text-gradient">Error</span>
+                    </h1>
+                    <p style={{ color: 'var(--text-secondary)' }}>
+                        No Quiz ID provided. Please open the host screen from the admin panel.
+                    </p>
+                </div>
+            </div>
+        );
+    }
 
     if (!quiz) {
         return (
             <div className="host-screen">
                 <div className="waiting-state">
                     <h1 style={{ fontFamily: 'Outfit', fontSize: 36, fontWeight: 800 }}>
-                        <span className="text-gradient">Guess Who?</span>
+                        <span className="text-gradient">Loading...</span>
                     </h1>
-                    <p style={{ color: 'var(--text-secondary)' }}>
-                        No quiz created yet. Go to <strong>/admin</strong> to create one.
-                    </p>
                     <div className="waiting-dots">
                         <span></span><span></span><span></span>
                     </div>
@@ -303,11 +326,18 @@ export default function HostPage() {
 
                 <div style={{ marginTop: 32 }}>
                     {!votingEnded && currentRound.votingEndsAt ? (
+                        <input
+                            type="hidden" // Just to trigger re-render
+                            value={votingEnded ? '1' : '0'}
+                        />
+                    ) : null}
+                    {!votingEnded && currentRound.votingEndsAt && (
                         <Countdown
                             endsAt={currentRound.votingEndsAt}
                             onComplete={() => setVotingEnded(true)}
                         />
-                    ) : (
+                    )}
+                    {votingEnded && (
                         <div style={{ textAlign: 'center' }}>
                             <p style={{
                                 fontSize: 20,

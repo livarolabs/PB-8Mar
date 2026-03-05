@@ -31,7 +31,9 @@ export default function PlayerPage() {
 
     // Subscribe to Firebase RTDB for quiz state
     useEffect(() => {
-        const unsubscribe = subscribeToQuiz((q: Quiz | null) => {
+        if (!quizId) return;
+
+        const unsubscribe = subscribeToQuiz(quizId, (q: Quiz | null) => {
             setQuiz(prev => {
                 // Detect round change → reset vote state
                 if (prev && q) {
@@ -50,7 +52,7 @@ export default function PlayerPage() {
         });
 
         return () => unsubscribe();
-    }, []);
+    }, [quizId]);
 
     // Check if current round voting has ended
     useEffect(() => {
@@ -100,13 +102,13 @@ export default function PlayerPage() {
         setSelectedPersonId(personId);
         setVotedThisRound(true);
         try {
-            await submitVote(player.id, personId);
+            await submitVote(quizId, player.id, personId);
         } catch (e) {
             console.error("Failed to vote:", e);
             setVotedThisRound(false);
             setSelectedPersonId(null);
         }
-    }, [player, votedThisRound, votingEnded]);
+    }, [quizId, player, votedThisRound, votingEnded]);
 
     // ── JOIN screen ─────────────────────────────────────────────
     if (!player) {
