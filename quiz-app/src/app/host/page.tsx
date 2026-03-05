@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { subscribeToQuiz, startRound, revealRound, nextRound, finishQuiz, resetQuiz } from '@/lib/db';
 import { Quiz } from '@/lib/types';
@@ -44,7 +44,7 @@ function Confetti() {
     );
 }
 
-export default function HostPage() {
+function HostDashboard() {
     const searchParams = useSearchParams();
     const quizId = searchParams.get('quizId');
 
@@ -425,5 +425,21 @@ export default function HostPage() {
                 <span></span><span></span><span></span>
             </div>
         </div>
+    );
+}
+
+export default function HostPage() {
+    return (
+        <Suspense fallback={
+            <div className="host-screen">
+                <div className="waiting-state">
+                    <div className="waiting-dots">
+                        <span></span><span></span><span></span>
+                    </div>
+                </div>
+            </div>
+        }>
+            <HostDashboard />
+        </Suspense>
     );
 }
