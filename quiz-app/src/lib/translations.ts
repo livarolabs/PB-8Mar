@@ -34,6 +34,16 @@ export interface Translations {
     finalScore: string;
     checkHostScreen: string;
     hi: string;
+    isItWhoYouThought: string;
+    tutorialTitle: string;
+    tutorialStep1: string;
+    tutorialStep2: string;
+    tutorialStep3: string;
+    tutorialStep4: string;
+    tutorialNext: string;
+    tutorialStart: string;
+    imReady: string;
+    ready: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -62,6 +72,16 @@ export const translations: Record<Language, Translations> = {
         finalScore: "Your Final Score",
         checkHostScreen: "Check the host screen for the winners!",
         hi: "Hi",
+        isItWhoYouThought: "Is it who you thought? 🧐",
+        tutorialTitle: "How to Play",
+        tutorialStep1: "Phase 1: First Caricature. Guess correctly for 2 Points! 🎨",
+        tutorialStep2: "Phase 2: Second Caricature. Last chance to guess for 1 Point! ✨",
+        tutorialStep3: "Phase 3: Name Reveal. See who it was and check your score! 🎉",
+        tutorialStep4: "Let's try! Who is this? (Hint: It's a demo)",
+        tutorialNext: "Next",
+        tutorialStart: "Start Tutorial",
+        imReady: "I'm Ready! 🚀",
+        ready: "Ready",
     },
     hu: {
         welcomeTitle: "Üdvözöljük a kvízben!",
@@ -88,6 +108,16 @@ export const translations: Record<Language, Translations> = {
         finalScore: "Végső pontszámod",
         checkHostScreen: "Nézd a főképernyőt a győztesekért!",
         hi: "Szia",
+        isItWhoYouThought: "Ez az akire gondoltál? 🧐",
+        tutorialTitle: "Hogyan játssz",
+        tutorialStep1: "1. fázis: Első karikatúra. Találd el 2 pontért! 🎨",
+        tutorialStep2: "2. fázis: Második karikatúra. Utolsó esély 1 pontért! ✨",
+        tutorialStep3: "3. fázis: Név felfedése. Nézd meg ki volt és mennyi pontot kaptál! 🎉",
+        tutorialStep4: "Próbáljuk ki! Ki ez? (Tipp: ez csak egy demó)",
+        tutorialNext: "Tovább",
+        tutorialStart: "Tanfolyam indítása",
+        imReady: "Készen állok! 🚀",
+        ready: "Kész",
     },
     ua: {
         welcomeTitle: "Welcome to the quiz!",
@@ -114,6 +144,16 @@ export const translations: Record<Language, Translations> = {
         finalScore: "Ваш фінальний рахунок",
         checkHostScreen: "Дивіться на екран ведучого для визначення переможців!",
         hi: "Привіт",
+        isItWhoYouThought: "Це той, хто ви думали? 🧐",
+        tutorialTitle: "Як грати",
+        tutorialStep1: "Фаза 1: Перша карикатура. Вгадайте правильно за 2 бали! 🎨",
+        tutorialStep2: "Фаза 2: Друга карикатура. Остання можливість вгадати за 1 бал! ✨",
+        tutorialStep3: "Фаза 3: Розкриття імені. Дізнайтеся, хто це, та перевірте рахунок! 🎉",
+        tutorialStep4: "Спробуймо! Хто це? (Підказка: це демо)",
+        tutorialNext: "Далі",
+        tutorialStart: "Почати навчання",
+        imReady: "Я готовий(а)! 🚀",
+        ready: "Готовий(а)",
     },
     ru: {
         welcomeTitle: "Добро пожаловать в квиз!",
@@ -140,5 +180,15 @@ export const translations: Record<Language, Translations> = {
         finalScore: "Ваш финальный счет",
         checkHostScreen: "Смотрите на экран ведущего для определения победителей!",
         hi: "Привет",
-    }
+        isItWhoYouThought: "Это тот, кто вы думали? 🧐",
+        tutorialTitle: "Как играть",
+        tutorialStep1: "Фаза 1: Первая карикатура. Угадайте правильно за 2 балла! 🎨",
+        tutorialStep2: "Фаза 2: Вторая карикатура. Последний шанс угадать за 1 балл! ✨",
+        tutorialStep3: "Фаза 3: Раскрытие имени. Узнайте, кто это, и проверьте счет! 🎉",
+        tutorialStep4: "Давайте попробуем! Кто это? (Подсказка: это демо)",
+        tutorialNext: "Далее",
+        tutorialStart: "Начать обучение",
+        imReady: "Я готов(а)! 🚀",
+        ready: "Готов(а)",
+    },
 };

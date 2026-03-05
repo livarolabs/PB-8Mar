@@ -596,6 +596,32 @@ function AdminDashboard() {
                                 </button>
                             </div>
                         </div>
+
+                        <div className="glass-card" style={{ width: '100%', maxWidth: 500, margin: '0 auto' }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Players ({quiz.players.length})</h3>
+                            <div style={{ display: 'grid', gap: 8 }}>
+                                {quiz.players.map(p => (
+                                    <div key={p.id} style={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        padding: '10px 14px',
+                                        background: 'rgba(255,255,255,0.03)',
+                                        borderRadius: 10,
+                                        border: '1px solid var(--border-color)'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                            <span>{p.isReady ? '✅' : '⌛'}</span>
+                                            <span style={{ fontWeight: 600 }}>{p.displayName}</span>
+                                        </div>
+                                        <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.score} pts</span>
+                                    </div>
+                                ))}
+                                {quiz.players.length === 0 && (
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>No players yet</p>
+                                )}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>

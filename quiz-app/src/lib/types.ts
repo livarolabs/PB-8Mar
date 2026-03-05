@@ -12,11 +12,12 @@ export interface Vote {
   playerId: string;
   guessedPersonId: string;
   timestamp: number;
+  points: number;
 }
 
 export interface Round {
   personId: string;
-  status: 'pending' | 'voting' | 'revealed';
+  status: 'pending' | 'voting' | 'revealing' | 'revealed';
   votingEndsAt: number | null;
   votes: Record<string, Vote> | null;
 }
@@ -29,6 +30,8 @@ export interface Player {
   score: number;
   joinedAt: number;
   language?: Language;
+  isReady?: boolean;
+  isTutorialFinished?: boolean;
 }
 
 export interface Quiz {

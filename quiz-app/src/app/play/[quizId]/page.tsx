@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
-import { subscribeToQuiz, joinQuiz, submitVote } from '@/lib/db';
+import { subscribeToQuiz, joinQuiz, submitVote, setPlayerReady, setTutorialFinished } from '@/lib/db';
 import { Quiz, Player, Person } from '@/lib/types';
 import Countdown from '@/components/Countdown';
 import Leaderboard from '@/components/Leaderboard';
@@ -20,6 +20,10 @@ export default function PlayerPage() {
     const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
     const [votingEnded, setVotingEnded] = useState(false);
     const [selectedLanguage, setSelectedLanguage] = useState<Language>('en');
+    const [showTutorial, setShowTutorial] = useState(false);
+    const [tutorialStep, setTutorialStep] = useState(0);
+    const [demoScore, setDemoScore] = useState(0);
+    const [demoVoted, setDemoVoted] = useState(false);
 
     // Translation helper
     const t = useMemo(() => {
@@ -101,15 +105,20 @@ export default function PlayerPage() {
         if (!nickname.trim()) return;
         setJoining(true);
         try {
-            const newPlayer = await joinQuiz(nickname.trim(), quizId);
-            setPlayer(newPlayer);
-            localStorage.setItem(`player_${quizId}`, JSON.stringify(newPlayer));
+            const newPlayer = await joinQuiz(nickname.trim(), quizId, selectedLanguage);
+            if (newPlayer) {
+                setPlayer(newPlayer);
+                localStorage.setItem(`player_${quizId}`, JSON.stringify(newPlayer));
+                if (!newPlayer.isTutorialFinished) {
+                    setShowTutorial(true);
+                }
+            }
         } catch (e) {
             console.error("Failed to join:", e);
         } finally {
             setJoining(false);
         }
-    }, [nickname, quizId]);
+    }, [nickname, quizId, selectedLanguage]);
 
     const handleVote = useCallback(async (personId: string) => {
         if (!player || votedThisRound || votingEnded) return;
@@ -123,6 +132,29 @@ export default function PlayerPage() {
             setSelectedPersonId(null);
         }
     }, [quizId, player, votedThisRound, votingEnded]);
+
+    const handleTutorialNext = () => {
+        setTutorialStep(prev => prev + 1);
+    };
+
+    const handleDemoVote = (isCorrect: boolean) => {
+        if (demoVoted) return;
+        setDemoVoted(true);
+        if (isCorrect) setDemoScore(2);
+        setTimeout(() => setTutorialStep(4), 1500);
+    };
+
+    const handleReady = async () => {
+        if (!player) return;
+        try {
+            await setTutorialFinished(quizId, player.id);
+            await setPlayerReady(quizId, player.id, true);
+            setPlayer(prev => prev ? { ...prev, isTutorialFinished: true, isReady: true } : null);
+            setShowTutorial(false);
+        } catch (e) {
+            console.error(e);
+        }
+    };
 
     // ── JOIN screen ─────────────────────────────────────────────
     if (!player) {
@@ -170,6 +202,78 @@ export default function PlayerPage() {
                         >
                             {joining ? t.joining : t.joinButton}
                         </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // ── TUTORIAL screen ─────────────────────────────────────────
+    if (showTutorial) {
+        return (
+            <div className="player-screen">
+                <div className="animate-in" style={{ textAlign: 'center', width: '100%', maxWidth: 400 }}>
+                    <h2 className="text-gradient" style={{ fontSize: 24, fontWeight: 800, marginBottom: 24 }}>
+                        {t.tutorialTitle}
+                    </h2>
+
+                    <div className="glass-card" style={{ padding: 24, minHeight: 350, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                        {tutorialStep === 0 && (
+                            <div className="animate-in">
+                                <span style={{ fontSize: 64 }}>🎨</span>
+                                <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep1}</p>
+                            </div>
+                        )}
+                        {tutorialStep === 1 && (
+                            <div className="animate-in">
+                                <span style={{ fontSize: 64 }}>✨</span>
+                                <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep2}</p>
+                            </div>
+                        )}
+                        {tutorialStep === 2 && (
+                            <div className="animate-in">
+                                <span style={{ fontSize: 64 }}>🎉</span>
+                                <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep3}</p>
+                            </div>
+                        )}
+                        {tutorialStep === 3 && (
+                            <div className="animate-in">
+                                <p style={{ fontSize: 14, marginBottom: 16, color: 'var(--text-secondary)' }}>{t.tutorialStep4}</p>
+                                <div className="player-caricature" style={{ marginBottom: 16, maxWidth: 140, margin: '0 auto 16px' }}>
+                                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400" alt="Demo" style={{ borderRadius: 12 }} />
+                                </div>
+                                <div className="player-options" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                                    <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 12 }} onClick={() => handleDemoVote(true)}>Woman A</button>
+                                    <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 12 }} onClick={() => handleDemoVote(false)}>Woman B</button>
+                                </div>
+                                {demoVoted && (
+                                    <p className="animate-in" style={{ marginTop: 12, color: 'var(--gold)', fontWeight: 700, fontSize: 14 }}>
+                                        {demoScore > 0 ? "Correct! +2 Pts" : "Not quite! 😅"}
+                                    </p>
+                                )}
+                            </div>
+                        )}
+                        {tutorialStep === 4 && (
+                            <div className="animate-in">
+                                <span style={{ fontSize: 64 }}>🚀</span>
+                                <h3 style={{ fontSize: 22, marginTop: 20, fontWeight: 800 }}>Great job!</h3>
+                                <p style={{ color: 'var(--text-secondary)', marginTop: 12 }}>You're all set to play the real game.</p>
+                            </div>
+                        )}
+                    </div>
+
+                    <div style={{ marginTop: 32 }}>
+                        {tutorialStep < 4 ? (
+                            tutorialStep !== 3 && (
+                                <button className="btn btn-primary btn-large" style={{ width: '100%' }} onClick={handleTutorialNext}>
+                                    {t.tutorialNext} →
+                                </button>
+                            )
+                        ) : (
+                            <button className="btn btn-primary btn-large" style={{ width: '100%', background: 'linear-gradient(135deg, var(--gold), var(--pink))' }} onClick={handleReady}>
+                                {t.imReady}
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -298,8 +402,14 @@ export default function PlayerPage() {
                         </h2>
                     </div>
 
-                    <div className="player-caricature">
+                    <div className="player-caricature" style={{ marginBottom: 12 }}>
                         <img src={currentPerson.caricatureUrl1} alt="Guess who?" />
+                    </div>
+
+                    <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                        <span className="host-badge" style={{ background: 'var(--gold)', color: '#000', fontSize: 11 }}>
+                            🎯 Correct answer: 2 Points
+                        </span>
                     </div>
 
                     {!votedThisRound && !votingEnded && currentRound.votingEndsAt && (
@@ -350,6 +460,73 @@ export default function PlayerPage() {
         );
     }
 
+    // ── REVEALING state (2nd pic, no results yet) ───────────────
+    if (currentRound.status === 'revealing' && currentPerson) {
+        return (
+            <div className="player-screen">
+                <div className="animate-in">
+                    <div className="player-header">
+                        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
+                            {t.round} {quiz.currentRoundIndex + 1} {t.of} {quiz.rounds.length}
+                        </p>
+                    </div>
+
+                    <div className="player-result" style={{ marginBottom: 24 }}>
+                        <div className="player-result-icon">🧐</div>
+                        <p className="player-result-text">
+                            {t.isItWhoYouThought}
+                        </p>
+                    </div>
+
+                    <div style={{
+                        borderRadius: 24,
+                        overflow: 'hidden',
+                        aspectRatio: '3/4',
+                        border: '3px solid var(--pink)',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+                        marginBottom: 24,
+                        transform: 'scale(1.05)',
+                    }}>
+                        <img
+                            src={currentPerson.caricatureUrl2}
+                            alt="Caricature 2"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                        />
+                    </div>
+
+                    {votedThisRound ? (
+                        <div className="vote-locked animate-in">
+                            <p>✅ {t.voteLocked}</p>
+                            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
+                                {t.waitingForReveal}
+                            </p>
+                            <div className="waiting-dots" style={{ marginTop: 20 }}>
+                                <span></span><span></span><span></span>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="player-options animate-in">
+                            <div style={{ textAlign: 'center', marginBottom: 12 }}>
+                                <span className="host-badge" style={{ background: 'var(--gold)', color: '#000', fontSize: 11 }}>
+                                    🎯 Last chance: 1 Point
+                                </span>
+                            </div>
+                            {shuffledPersonNames.map((person: Person) => (
+                                <button
+                                    key={person.id}
+                                    className={`btn ${selectedPersonId === person.id ? 'btn-primary' : 'btn-secondary'}`}
+                                    onClick={() => handleVote(person.id)}
+                                >
+                                    {person.name}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     // ── REVEALED state ──────────────────────────────────────────
     if (currentRound.status === 'revealed' && currentPerson) {
         // Find player's vote
@@ -377,7 +554,7 @@ export default function PlayerPage() {
                                     {isCorrect ? '🎉' : '😅'}
                                 </div>
                                 <p className="player-result-text">
-                                    {isCorrect ? t.correct : t.notQuite}
+                                    {isCorrect ? `${t.correct} (+${myVote?.points || 0})` : t.notQuite}
                                 </p>
                                 <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
                                     {t.itWas} <strong className="text-gradient">{currentPerson.name}</strong>

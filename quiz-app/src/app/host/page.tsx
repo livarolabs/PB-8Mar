@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { subscribeToQuiz, startRound, revealRound, nextRound, finishQuiz, resetQuiz } from '@/lib/db';
+import { subscribeToQuiz, startRound, revealCaricature, revealName, nextRound, finishQuiz, resetQuiz } from '@/lib/db';
 import { Quiz } from '@/lib/types';
 import Countdown from '@/components/Countdown';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
@@ -120,12 +120,23 @@ function HostDashboard() {
         }
     }, [quizId]);
 
-    const handleReveal = useCallback(async () => {
+    const handleRevealCaricature = useCallback(async () => {
         if (!quizId) return;
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 4000);
         try {
-            await revealRound(quizId);
+            await revealCaricature(quizId);
+        } catch (e) {
+            console.error(e);
+        }
+    }, [quizId]);
+
+    const handleRevealName = useCallback(async () => {
+        if (!quizId) return;
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 4000);
+        try {
+            await revealName(quizId);
         } catch (e) {
             console.error(e);
         }
@@ -263,8 +274,40 @@ function HostDashboard() {
                 </p>
 
                 {joinUrl && (
-                    <QRCodeDisplay url={joinUrl} size={250} label="Scan to Join!" />
+                    <QRCodeDisplay url={joinUrl} size={220} label="Scan to Join!" />
                 )}
+
+                <div style={{
+                    width: '100%',
+                    maxWidth: 800,
+                    margin: '40px auto',
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+                    gap: 16,
+                }}>
+                    {quiz.players.map(p => (
+                        <div key={p.id} className="player-lobby-card animate-in" style={{
+                            padding: '16px',
+                            background: 'var(--bg-card)',
+                            borderRadius: 16,
+                            border: `2px solid ${p.isReady ? 'var(--gold)' : 'var(--border-color)'}`,
+                            textAlign: 'center',
+                            position: 'relative'
+                        }}>
+                            <div style={{ fontSize: 32, marginBottom: 8 }}>{p.isReady ? '👤' : '⌛'}</div>
+                            <div style={{ fontWeight: 700, fontSize: 16 }}>{p.displayName}</div>
+                            <div style={{
+                                fontSize: 10,
+                                marginTop: 4,
+                                color: p.isReady ? 'var(--gold)' : 'var(--text-muted)',
+                                textTransform: 'uppercase',
+                                letterSpacing: 1
+                            }}>
+                                {p.isReady ? 'Ready' : 'In Tutorial'}
+                            </div>
+                        </div>
+                    ))}
+                </div>
 
                 <div className="host-controls">
                     <button
@@ -396,17 +439,51 @@ function HostDashboard() {
                 <div className="host-controls">
                     <button
                         className={`btn ${votingEnded ? 'btn-primary' : 'btn-secondary'} btn-large`}
-                        onClick={handleReveal}
+                        onClick={handleRevealCaricature}
                         style={{ opacity: votingEnded ? 1 : 0.8 }}
                     >
-                        {votingEnded ? '👀 Reveal Answer' : '⏭️ Skip and Reveal'}
+                        {votingEnded ? '👀 Reveal 2nd Caricature' : '⏭️ Skip and Reveal Pic'}
                     </button>
                 </div>
             </div>
         );
     }
 
-    // ── REVEALED state ──────────────────────────────────────────
+    // ── REVEALING state (2nd pic, no name) ──────────────────────
+    if (currentRound.status === 'revealing' && currentPerson) {
+        return (
+            <div className="host-screen">
+                {showConfetti && <Confetti />}
+                <div className="host-info-bar">
+                    <div className="host-badge">
+                        🎯 Round {quiz.currentRoundIndex + 1}/{quiz.rounds.length}
+                    </div>
+                </div>
+
+                <h2 style={{
+                    fontFamily: 'Outfit',
+                    fontSize: 28,
+                    fontWeight: 700,
+                    color: 'var(--text-secondary)',
+                    marginBottom: 24,
+                }}>
+                    Is it who you thought? 🧐
+                </h2>
+
+                <div className="host-caricature" style={{ border: '3px solid var(--pink)', transform: 'scale(1.1)' }}>
+                    <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
+                </div>
+
+                <div className="host-controls">
+                    <button className="btn btn-primary btn-large" onClick={handleRevealName}>
+                        ✨ Reveal The Name!
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
+    // ── REVEALED state (Full reveal) ────────────────────────────
     if (currentRound.status === 'revealed' && currentPerson) {
         const votesArray = currentRound.votes ? Object.values(currentRound.votes) : [];
         const correctVotes = votesArray.filter((v: any) => v.guessedPersonId === currentPerson.id).length;

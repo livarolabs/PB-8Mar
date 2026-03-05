@@ -204,7 +204,7 @@ export async function updateQuizSettings(quizId: string, settings: Quiz['setting
     await update(quizRef, { settings });
 }
 
-export async function revealRound(quizId: string) {
+export async function revealCaricature(quizId: string) {
     const quizRef = dbRef(db, `quizzes/${quizId}`);
     const quizSnapshot = await get(quizRef);
     if (!quizSnapshot.exists()) return;
@@ -213,11 +213,24 @@ export async function revealRound(quizId: string) {
     const idx = quiz.currentRoundIndex || 0;
 
     await update(child(quizRef, `rounds/${idx}`), {
+        status: 'revealing'
+    });
+}
+
+export async function revealName(quizId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
+    const quizSnapshot = await get(quizRef);
+    if (!quizSnapshot.exists()) return;
+
+    const quiz = quizSnapshot.val();
+    const idx = quiz.currentRoundIndex || 0;
+    const round = quiz.rounds[idx];
+
+    await update(child(quizRef, `rounds/${idx}`), {
         status: 'revealed'
     });
 
-    // Calculate scores
-    const round = quiz.rounds[idx];
+    // Calculate scores for ALL correct votes in this round
     if (!round || !round.votes) return;
 
     const correctPersonId = round.personId;
@@ -227,7 +240,9 @@ export async function revealRound(quizId: string) {
         if (vote.guessedPersonId === correctPersonId) {
             const player = quiz.players && quiz.players[vote.playerId];
             if (player) {
-                updates[`players/${vote.playerId}/score`] = (player.score || 0) + 1;
+                const currentScore = player.score || 0;
+                const pointsToAdd = vote.points || 0;
+                updates[`players/${vote.playerId}/score`] = currentScore + pointsToAdd;
             }
         }
     });
@@ -319,19 +334,33 @@ export async function submitVote(quizId: string, playerId: string, guessedPerson
     const idx = quiz.currentRoundIndex || 0;
     const round = quiz.rounds && quiz.rounds[idx];
 
-    if (!round || round.status !== 'voting') return;
-    if (round.votingEndsAt && Date.now() > round.votingEndsAt) return;
+    if (!round) return;
+    if (round.status !== 'voting' && round.status !== 'revealing') return;
+    if (round.status === 'voting' && round.votingEndsAt && Date.now() > round.votingEndsAt) return;
 
     // Check if already voted
     if (round.votes && round.votes[playerId]) return;
 
+    const points = round.status === 'voting' ? 2 : 1;
+
     const vote: Vote = {
         playerId,
         guessedPersonId,
-        timestamp: Date.now()
+        timestamp: Date.now(),
+        points
     };
 
     await set(child(quizRef, `rounds/${idx}/votes/${playerId}`), vote);
+}
+
+export async function setPlayerReady(quizId: string, playerId: string, isReady: boolean) {
+    const playerRef = dbRef(db, `quizzes/${quizId}/players/${playerId}`);
+    await update(playerRef, { isReady });
+}
+
+export async function setTutorialFinished(quizId: string, playerId: string) {
+    const playerRef = dbRef(db, `quizzes/${quizId}/players/${playerId}`);
+    await update(playerRef, { isTutorialFinished: true });
 }
 
 // Storage API
