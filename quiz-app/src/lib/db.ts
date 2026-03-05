@@ -300,15 +300,19 @@ export async function resetQuiz(quizId: string) {
 
 // Player API
 export async function joinQuiz(displayName: string, quizId: string, language: Language = 'en'): Promise<Player | null> {
+    console.log('[joinQuiz] Starting...', { displayName, quizId, language });
     const quizRef = dbRef(db, `quizzes/${quizId}`);
     try {
+        console.log('[joinQuiz] Fetching quiz data...');
         const qs = await get(quizRef);
+        console.log('[joinQuiz] Got quiz snapshot, exists:', qs.exists());
         if (!qs.exists()) {
-            console.error('joinQuiz: quiz not found', quizId);
+            console.error('[joinQuiz] quiz not found', quizId);
             return null;
         }
 
         const quiz = qs.val();
+        console.log('[joinQuiz] Players count:', quiz.players ? Object.keys(quiz.players).length : 0);
 
         // Check if player already exists
         if (quiz.players) {
@@ -317,6 +321,7 @@ export async function joinQuiz(displayName: string, quizId: string, language: La
             );
             if (existingEntry) {
                 const [existingId, existingData] = existingEntry as [string, any];
+                console.log('[joinQuiz] Found existing player:', existingId);
                 // Update language if changed, and backfill missing fields
                 const updates: Record<string, any> = {};
                 if (existingData.language !== language) updates.language = language;
@@ -324,7 +329,9 @@ export async function joinQuiz(displayName: string, quizId: string, language: La
                 if (existingData.isTutorialFinished === undefined) updates.isTutorialFinished = false;
 
                 if (Object.keys(updates).length > 0) {
+                    console.log('[joinQuiz] Updating existing player fields:', updates);
                     await update(child(quizRef, `players/${existingId}`), updates);
+                    console.log('[joinQuiz] Updated existing player');
                 }
 
                 return {
@@ -348,10 +355,12 @@ export async function joinQuiz(displayName: string, quizId: string, language: La
             isTutorialFinished: false,
         };
 
+        console.log('[joinQuiz] Creating new player:', id);
         await set(child(quizRef, `players/${id}`), player);
+        console.log('[joinQuiz] Player created successfully');
         return player;
     } catch (error) {
-        console.error('joinQuiz error:', error);
+        console.error('[joinQuiz] ERROR:', error);
         throw error;
     }
 }

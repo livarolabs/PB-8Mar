@@ -24,6 +24,7 @@ export default function PlayerPage() {
     const [tutorialStep, setTutorialStep] = useState(0);
     const [demoScore, setDemoScore] = useState(0);
     const [demoVoted, setDemoVoted] = useState(false);
+    const [joinError, setJoinError] = useState<string | null>(null);
 
     // Translation helper
     const t = useMemo(() => {
@@ -104,17 +105,28 @@ export default function PlayerPage() {
     const handleJoin = useCallback(async () => {
         if (!nickname.trim()) return;
         setJoining(true);
+        setJoinError(null);
         try {
-            const newPlayer = await joinQuiz(nickname.trim(), quizId, selectedLanguage);
+            // Timeout wrapper — don't let the user hang forever
+            const timeoutPromise = new Promise<null>((_, reject) =>
+                setTimeout(() => reject(new Error('Connection timed out. Please check your internet and try again.')), 10000)
+            );
+            const newPlayer = await Promise.race([
+                joinQuiz(nickname.trim(), quizId, selectedLanguage),
+                timeoutPromise,
+            ]);
             if (newPlayer) {
                 setPlayer(newPlayer);
                 localStorage.setItem(`player_${quizId}`, JSON.stringify(newPlayer));
                 if (!newPlayer.isTutorialFinished) {
                     setShowTutorial(true);
                 }
+            } else {
+                setJoinError('Quiz not found. Please check the link and try again.');
             }
-        } catch (e) {
-            console.error("Failed to join:", e);
+        } catch (e: any) {
+            console.error('Failed to join:', e);
+            setJoinError(e?.message || 'Failed to join. Please try again.');
         } finally {
             setJoining(false);
         }
@@ -202,6 +214,19 @@ export default function PlayerPage() {
                         >
                             {joining ? t.joining : t.joinButton}
                         </button>
+                        {joinError && (
+                            <p style={{
+                                color: 'var(--pink)',
+                                fontSize: 13,
+                                textAlign: 'center',
+                                marginTop: 8,
+                                padding: '8px 12px',
+                                background: 'rgba(236, 72, 153, 0.1)',
+                                borderRadius: 8,
+                            }}>
+                                ⚠️ {joinError}
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
