@@ -19,6 +19,12 @@ export default function PlayerPage() {
     const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
     const [votingEnded, setVotingEnded] = useState(false);
 
+    // Shuffle person names for voting (random for each player, but consistent for the round)
+    const shuffledPersonNames = useMemo(() => {
+        if (!quiz || !quiz.persons) return [];
+        return [...quiz.persons].sort(() => Math.random() - 0.5);
+    }, [quiz?.id, quiz?.currentRoundIndex, quiz?.persons]);
+
     // Restore player from localStorage
     useEffect(() => {
         const saved = localStorage.getItem(`player_${quizId}`);
@@ -234,11 +240,6 @@ export default function PlayerPage() {
 
     // ── VOTING state ────────────────────────────────────────────
     if (currentRound.status === 'voting' && currentPerson) {
-        // Shuffle person names for voting (random for each player, but consistent for the round)
-        const shuffledPersonNames = useMemo(() => {
-            return [...quiz.persons].sort(() => Math.random() - 0.5);
-        }, [quiz.id, quiz.currentRoundIndex]); // Re-shuffle when quiz or round changes
-
         return (
             <div className="player-screen">
                 <div className="animate-in">
