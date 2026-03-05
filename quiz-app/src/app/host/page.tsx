@@ -449,14 +449,23 @@ function HostDashboard() {
         );
     }
 
-    // ── REVEALING state (2nd pic, no name) ──────────────────────
+    // ── REVEALING state (2nd pic, still voting for 1pt) ──────────
     if (currentRound.status === 'revealing' && currentPerson) {
+        const revealVotesCount = currentRound.votes ? Object.keys(currentRound.votes).length : 0;
+        const allVoted = quiz.players.length > 0 && revealVotesCount >= quiz.players.length;
+
         return (
             <div className="host-screen">
                 {showConfetti && <Confetti />}
                 <div className="host-info-bar">
                     <div className="host-badge">
+                        👥 {quiz.players.length} players
+                    </div>
+                    <div className="host-badge">
                         🎯 Round {quiz.currentRoundIndex + 1}/{quiz.rounds.length}
+                    </div>
+                    <div className="host-badge">
+                        ✅ {revealVotesCount} votes
                     </div>
                 </div>
 
@@ -465,13 +474,27 @@ function HostDashboard() {
                     fontSize: 28,
                     fontWeight: 700,
                     color: 'var(--text-secondary)',
-                    marginBottom: 24,
+                    marginBottom: 8,
                 }}>
-                    Is it who you thought? 🧐
+                    2nd Caricature — Still guessing! 🧐
                 </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
+                    Players can still vote for 1 point
+                </p>
 
-                <div className="host-caricature" style={{ border: '3px solid var(--pink)', transform: 'scale(1.1)' }}>
+                <div className="host-caricature" style={{ border: '3px solid var(--pink)', transform: 'scale(1.05)' }}>
                     <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
+                </div>
+
+                <div style={{ marginTop: 24, textAlign: 'center' }}>
+                    <div className="glass-card" style={{ display: 'inline-block', padding: '12px 28px' }}>
+                        <div style={{ fontSize: 22, fontWeight: 800, color: allVoted ? 'var(--pink)' : 'var(--gold)', marginBottom: 4 }}>
+                            {revealVotesCount} / {quiz.players.length}
+                        </div>
+                        <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                            {allVoted ? '🙌 Everyone has voted!' : 'Waiting for votes...'}
+                        </div>
+                    </div>
                 </div>
 
                 <div className="host-controls">
@@ -500,18 +523,20 @@ function HostDashboard() {
                     </div>
                 </div>
 
+                <h2 className="host-reveal-name" style={{ marginBottom: 24 }}>{currentPerson.name}</h2>
+
                 <div className="host-reveal-grid">
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                         <div className="host-caricature">
                             <img src={currentPerson.caricatureUrl1} alt="Caricature 1" />
                         </div>
-                        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Caricature (Voting)</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Caricature 1</p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                         <div className="host-caricature" style={{ border: '3px solid var(--pink)' }}>
                             <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
                         </div>
-                        <h2 className="host-reveal-name">{currentPerson.name}</h2>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Caricature 2</p>
                     </div>
                 </div>
 
