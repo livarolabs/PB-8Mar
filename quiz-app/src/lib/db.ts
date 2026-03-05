@@ -67,6 +67,7 @@ export function subscribeToQuiz(quizId: string, callback: (quiz: Quiz | null) =>
             status: data.status || 'draft',
             currentRoundIndex: data.currentRoundIndex || 0,
             ownerId: data.ownerId || '',
+            settings: data.settings || { votingDuration: 15 },
             persons: data.persons ? (Object.values(data.persons) as Person[]).sort((a: any, b: any) => a.orderIndex - b.orderIndex) : [],
             players: data.players ? (Object.values(data.players) as Player[]) : [],
             rounds: data.rounds ? (Object.values(data.rounds) as Round[]) : [],
@@ -88,6 +89,9 @@ export async function createQuiz(title: string, ownerId: string): Promise<string
         status: 'draft',
         currentRoundIndex: 0,
         ownerId,
+        settings: {
+            votingDuration: 15
+        },
         createdAt: Date.now(),
         persons: {},
         players: {},
@@ -145,10 +149,11 @@ export async function publishQuiz(quizId: string) {
     const quiz = quizSnapshot.val();
     const persons: Person[] = quiz.persons ? Object.values(quiz.persons) : [];
 
-    persons.sort((a, b) => a.orderIndex - b.orderIndex);
+    // Randomize the order of persons for the rounds
+    const shuffledPersons = [...persons].sort(() => Math.random() - 0.5);
 
     const rounds: Record<string, any> = {};
-    persons.forEach((p, index) => {
+    shuffledPersons.forEach((p, index) => {
         rounds[index.toString()] = {
             personId: p.id,
             status: 'pending',
@@ -177,12 +182,18 @@ export async function startRound(quizId: string) {
 
     const quiz = quizSnapshot.val();
     const idx = quiz.currentRoundIndex || 0;
+    const duration = (quiz.settings?.votingDuration || 15) * 1000;
 
     await update(child(quizRef, `rounds/${idx}`), {
         status: 'voting',
-        votingEndsAt: Date.now() + 10000,
+        votingEndsAt: Date.now() + duration,
         votes: {}
     });
+}
+
+export async function updateQuizSettings(quizId: string, settings: Quiz['settings']) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
+    await update(quizRef, { settings });
 }
 
 export async function revealRound(quizId: string) {

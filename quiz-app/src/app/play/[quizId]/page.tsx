@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams } from 'next/navigation';
 import { subscribeToQuiz, joinQuiz, submitVote } from '@/lib/db';
-import { Quiz, Player } from '@/lib/types';
+import { Quiz, Player, Person } from '@/lib/types';
 import Countdown from '@/components/Countdown';
 import Leaderboard from '@/components/Leaderboard';
 
@@ -234,8 +234,10 @@ export default function PlayerPage() {
 
     // ── VOTING state ────────────────────────────────────────────
     if (currentRound.status === 'voting' && currentPerson) {
-        // Shuffle person names for voting (but consistent per round)
-        const personNames = [...quiz.persons].sort((a, b) => a.name.localeCompare(b.name));
+        // Shuffle person names for voting (random for each player, but consistent for the round)
+        const shuffledPersonNames = useMemo(() => {
+            return [...quiz.persons].sort(() => Math.random() - 0.5);
+        }, [quiz.id, quiz.currentRoundIndex]); // Re-shuffle when quiz or round changes
 
         return (
             <div className="player-screen">
@@ -287,7 +289,7 @@ export default function PlayerPage() {
                         </div>
                     ) : (
                         <div className="vote-grid">
-                            {personNames.map(person => (
+                            {shuffledPersonNames.map((person: Person) => (
                                 <button
                                     key={person.id}
                                     className={`btn-vote ${selectedPersonId === person.id ? 'selected' : ''}`}

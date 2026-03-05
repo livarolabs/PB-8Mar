@@ -33,6 +33,9 @@ export interface Quiz {
   status: 'draft' | 'live' | 'finished';
   currentRoundIndex: number;
   ownerId: string;
+  settings: {
+    votingDuration: number; // in seconds
+  };
   persons: Person[];
   rounds: Round[];
   players: Player[];

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { subscribeToQuiz, createQuiz, addPerson, removePerson, publishQuiz, deleteQuiz, uploadImage, listQuizzes, onAuthChange, loginWithGoogle, logout } from '@/lib/db';
+import { subscribeToQuiz, createQuiz, addPerson, removePerson, publishQuiz, deleteQuiz, uploadImage, listQuizzes, onAuthChange, loginWithGoogle, logout, updateQuizSettings } from '@/lib/db';
 import { Quiz } from '@/lib/types';
 import { User } from 'firebase/auth';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
@@ -137,6 +137,15 @@ function AdminDashboard() {
             showError(`Failed to remove person: ${err.message}`);
         }
     }, [quizId]);
+
+    const handleUpdateSettings = useCallback(async (newDuration: number) => {
+        if (!quizId || !quiz) return;
+        try {
+            await updateQuizSettings(quizId, { ...quiz.settings, votingDuration: newDuration });
+        } catch (err: any) {
+            showError(`Failed to update settings: ${err.message}`);
+        }
+    }, [quizId, quiz]);
 
     const handlePublish = useCallback(async () => {
         if (!quizId) return;
@@ -332,6 +341,36 @@ function AdminDashboard() {
                             <button className="btn btn-danger" onClick={() => handleDeleteQuiz()} style={{ fontSize: 12 }}>
                                 Delete Quiz
                             </button>
+                        </div>
+
+                        {/* Quiz Settings */}
+                        <div className="glass-card" style={{ marginBottom: 24 }}>
+                            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
+                                Quiz Settings ⚙️
+                            </h3>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={{ fontSize: 14 }}>Voting Time (seconds)</label>
+                                    <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--pink)' }}>
+                                        {quiz.settings?.votingDuration || 15}s
+                                    </span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="5"
+                                    max="60"
+                                    step="5"
+                                    value={quiz.settings?.votingDuration || 15}
+                                    onChange={(e) => handleUpdateSettings(parseInt(e.target.value))}
+                                    className="slider"
+                                    style={{ width: '100%', cursor: 'pointer' }}
+                                />
+                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
+                                    <span>5s</span>
+                                    <span>30s</span>
+                                    <span>60s</span>
+                                </div>
+                            </div>
                         </div>
 
                         {/* Add Person Form */}
