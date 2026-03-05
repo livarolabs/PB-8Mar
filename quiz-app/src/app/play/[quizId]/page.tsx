@@ -54,13 +54,20 @@ export default function PlayerPage() {
 
         const unsubscribe = subscribeToQuiz(quizId, (q: Quiz | null) => {
             setQuiz(prev => {
-                // Detect round change → reset vote state
                 if (prev && q) {
+                    const prevRound = prev.rounds[prev.currentRoundIndex];
+                    const newRound = q.rounds[q.currentRoundIndex];
+                    // Detect round change → reset vote state
                     if (
                         prev.currentRoundIndex !== q.currentRoundIndex ||
-                        (prev.rounds[prev.currentRoundIndex]?.status === 'revealed' &&
-                            q.rounds[q.currentRoundIndex]?.status === 'pending')
+                        (prevRound?.status === 'revealed' && newRound?.status === 'pending')
                     ) {
+                        setVotedThisRound(false);
+                        setSelectedPersonId(null);
+                        setVotingEnded(false);
+                    }
+                    // Reset vote state when entering revealing (2nd image)
+                    if (prevRound?.status === 'voting' && newRound?.status === 'revealing') {
                         setVotedThisRound(false);
                         setSelectedPersonId(null);
                         setVotingEnded(false);
@@ -133,7 +140,12 @@ export default function PlayerPage() {
     }, [nickname, quizId, selectedLanguage]);
 
     const handleVote = useCallback(async (personId: string) => {
-        if (!player || votedThisRound || votingEnded) return;
+        if (!player || votedThisRound) return;
+        // Block votes if the current phase's timer has ended
+        const currentRd = quiz?.rounds[quiz.currentRoundIndex];
+        if (currentRd?.status === 'voting' && votingEnded) return;
+        if (currentRd?.status === 'revealing' && currentRd.revealingEndsAt && Date.now() > currentRd.revealingEndsAt) return;
+
         setSelectedPersonId(personId);
         setVotedThisRound(true);
         try {
@@ -143,7 +155,7 @@ export default function PlayerPage() {
             setVotedThisRound(false);
             setSelectedPersonId(null);
         }
-    }, [quizId, player, votedThisRound, votingEnded]);
+    }, [quizId, player, votedThisRound, votingEnded, quiz]);
 
     const handleTutorialNext = () => {
         setTutorialStep(prev => prev + 1);
@@ -467,14 +479,58 @@ export default function PlayerPage() {
                             </p>
                         </div>
                     ) : (
-                        <div className="player-options">
-                            {shuffledPersonNames.map((person: Person) => (
+                        <div style={{
+                            maxHeight: '35vh',
+                            overflowY: 'auto',
+                            padding: '4px 0',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 8,
+                            WebkitOverflowScrolling: 'touch',
+                        }}>
+                            {shuffledPersonNames.map((person: Person, i: number) => (
                                 <button
                                     key={person.id}
-                                    className={`btn ${selectedPersonId === person.id ? 'btn-primary' : 'btn-secondary'}`}
                                     onClick={() => handleVote(person.id)}
                                     disabled={votedThisRound}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 12,
+                                        width: '100%',
+                                        padding: '14px 18px',
+                                        borderRadius: 14,
+                                        border: selectedPersonId === person.id
+                                            ? '2px solid var(--pink)'
+                                            : '2px solid rgba(255,255,255,0.1)',
+                                        background: selectedPersonId === person.id
+                                            ? 'rgba(236, 72, 153, 0.15)'
+                                            : 'rgba(255,255,255,0.05)',
+                                        color: 'var(--text-primary)',
+                                        fontSize: 15,
+                                        fontWeight: 600,
+                                        fontFamily: 'Outfit, sans-serif',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        textAlign: 'left',
+                                    }}
                                 >
+                                    <span style={{
+                                        width: 28, height: 28,
+                                        borderRadius: '50%',
+                                        background: selectedPersonId === person.id
+                                            ? 'var(--pink)'
+                                            : 'rgba(255,255,255,0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: 13,
+                                        fontWeight: 700,
+                                        color: selectedPersonId === person.id ? '#fff' : 'var(--text-muted)',
+                                        flexShrink: 0,
+                                    }}>
+                                        {String.fromCharCode(65 + i)}
+                                    </span>
                                     {person.name}
                                 </button>
                             ))}
@@ -559,12 +615,48 @@ export default function PlayerPage() {
                                 </div>
                             )}
 
-                            {shuffledPersonNames.map((person: Person) => (
+                            {shuffledPersonNames.map((person: Person, i: number) => (
                                 <button
                                     key={person.id}
-                                    className={`btn ${selectedPersonId === person.id ? 'btn-primary' : 'btn-secondary'}`}
                                     onClick={() => handleVote(person.id)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 12,
+                                        width: '100%',
+                                        padding: '14px 18px',
+                                        borderRadius: 14,
+                                        border: selectedPersonId === person.id
+                                            ? '2px solid var(--gold)'
+                                            : '2px solid rgba(255,255,255,0.1)',
+                                        background: selectedPersonId === person.id
+                                            ? 'rgba(255, 184, 0, 0.15)'
+                                            : 'rgba(255,255,255,0.05)',
+                                        color: 'var(--text-primary)',
+                                        fontSize: 15,
+                                        fontWeight: 600,
+                                        fontFamily: 'Outfit, sans-serif',
+                                        cursor: 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        textAlign: 'left',
+                                    }}
                                 >
+                                    <span style={{
+                                        width: 28, height: 28,
+                                        borderRadius: '50%',
+                                        background: selectedPersonId === person.id
+                                            ? 'var(--gold)'
+                                            : 'rgba(255,255,255,0.1)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: 13,
+                                        fontWeight: 700,
+                                        color: selectedPersonId === person.id ? '#000' : 'var(--text-muted)',
+                                        flexShrink: 0,
+                                    }}>
+                                        {String.fromCharCode(65 + i)}
+                                    </span>
                                     {person.name}
                                 </button>
                             ))}
