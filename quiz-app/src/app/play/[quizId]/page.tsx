@@ -176,7 +176,7 @@ export default function PlayerPage() {
         if (demoVoted) return;
         setDemoVoted(true);
         if (isCorrect) setDemoScore(2);
-        setTimeout(() => setTutorialStep(4), 1500);
+        setTimeout(() => setTutorialStep(8), 1500);
     };
 
     const handleReady = async () => {
@@ -268,25 +268,49 @@ export default function PlayerPage() {
                     <div className="glass-card" style={{ padding: 24, minHeight: 350, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         {tutorialStep === 0 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🎨</span>
+                                <span style={{ fontSize: 64 }}>🌺</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep1}</p>
                             </div>
                         )}
                         {tutorialStep === 1 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>✨</span>
+                                <span style={{ fontSize: 64 }}>🕵️‍♂️</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep2}</p>
                             </div>
                         )}
                         {tutorialStep === 2 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🎉</span>
+                                <span style={{ fontSize: 64 }}>🤖</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep3}</p>
                             </div>
                         )}
                         {tutorialStep === 3 && (
                             <div className="animate-in">
-                                <p style={{ fontSize: 14, marginBottom: 16, color: 'var(--text-secondary)' }}>{t.tutorialStep4}</p>
+                                <span style={{ fontSize: 64 }}>📝</span>
+                                <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep4}</p>
+                            </div>
+                        )}
+                        {tutorialStep === 4 && (
+                            <div className="animate-in">
+                                <span style={{ fontSize: 64 }}>🎨</span>
+                                <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep5}</p>
+                            </div>
+                        )}
+                        {tutorialStep === 5 && (
+                            <div className="animate-in">
+                                <span style={{ fontSize: 64 }}>✨</span>
+                                <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep6}</p>
+                            </div>
+                        )}
+                        {tutorialStep === 6 && (
+                            <div className="animate-in">
+                                <span style={{ fontSize: 64 }}>🏆</span>
+                                <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep7}</p>
+                            </div>
+                        )}
+                        {tutorialStep === 7 && (
+                            <div className="animate-in">
+                                <p style={{ fontSize: 14, marginBottom: 16, color: 'var(--text-secondary)' }}>{t.tutorialStep7}</p>
                                 <div className="player-caricature" style={{ marginBottom: 16, maxWidth: 140, margin: '0 auto 16px' }}>
                                     <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400" alt="Demo" style={{ borderRadius: 12 }} />
                                 </div>
@@ -301,7 +325,7 @@ export default function PlayerPage() {
                                 )}
                             </div>
                         )}
-                        {tutorialStep === 4 && (
+                        {tutorialStep === 8 && (
                             <div className="animate-in">
                                 <span style={{ fontSize: 64 }}>🚀</span>
                                 <h3 style={{ fontSize: 22, marginTop: 20, fontWeight: 800 }}>{t.tutorialComplete}</h3>
@@ -311,8 +335,8 @@ export default function PlayerPage() {
                     </div>
 
                     <div style={{ marginTop: 32 }}>
-                        {tutorialStep < 4 ? (
-                            tutorialStep !== 3 && (
+                        {tutorialStep < 8 ? (
+                            tutorialStep !== 7 && (
                                 <button className="btn btn-primary btn-large" style={{ width: '100%' }} onClick={handleTutorialNext}>
                                     {t.tutorialNext} →
                                 </button>
