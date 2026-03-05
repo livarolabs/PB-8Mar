@@ -52,6 +52,7 @@ function HostDashboard() {
     const [baseUrl, setBaseUrl] = useState('');
     const [showConfetti, setShowConfetti] = useState(false);
     const [votingEnded, setVotingEnded] = useState(false);
+    const [revealingEnded, setRevealingEnded] = useState(false);
 
     useEffect(() => {
         setBaseUrl(window.location.origin);
@@ -486,20 +487,54 @@ function HostDashboard() {
                     <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
                 </div>
 
-                <div style={{ marginTop: 24, textAlign: 'center' }}>
-                    <div className="glass-card" style={{ display: 'inline-block', padding: '12px 28px' }}>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: allVoted ? 'var(--pink)' : 'var(--gold)', marginBottom: 4 }}>
-                            {revealVotesCount} / {quiz.players.length}
+                <div style={{ marginTop: 24 }}>
+                    {quiz.settings?.votingMode === 'all_voted' ? (
+                        <div style={{ textAlign: 'center' }}>
+                            <div className="glass-card" style={{ display: 'inline-block', padding: '12px 28px' }}>
+                                <div style={{ fontSize: 22, fontWeight: 800, color: allVoted ? 'var(--pink)' : 'var(--gold)', marginBottom: 4 }}>
+                                    {revealVotesCount} / {quiz.players.length}
+                                </div>
+                                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+                                    {allVoted ? '🙌 Everyone has voted!' : 'Waiting for votes...'}
+                                </div>
+                            </div>
                         </div>
-                        <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                            {allVoted ? '🙌 Everyone has voted!' : 'Waiting for votes...'}
-                        </div>
-                    </div>
+                    ) : (
+                        <>
+                            {!revealingEnded && currentRound.revealingEndsAt && (
+                                <Countdown
+                                    endsAt={currentRound.revealingEndsAt}
+                                    onComplete={() => setRevealingEnded(true)}
+                                />
+                            )}
+                            {revealingEnded && (
+                                <div style={{ textAlign: 'center' }}>
+                                    <p style={{
+                                        fontSize: 20,
+                                        fontWeight: 700,
+                                        color: 'var(--gold)',
+                                        marginBottom: 8,
+                                    }}>
+                                        {revealVotesCount >= quiz.players.length && quiz.players.length > 0
+                                            ? "🙌 Everyone has voted!"
+                                            : "⏰ Time's up!"}
+                                    </p>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+                                        {revealVotesCount} votes received
+                                    </p>
+                                </div>
+                            )}
+                        </>
+                    )}
                 </div>
 
                 <div className="host-controls">
-                    <button className="btn btn-primary btn-large" onClick={handleRevealName}>
-                        ✨ Reveal The Name!
+                    <button
+                        className={`btn ${revealingEnded || allVoted ? 'btn-primary' : 'btn-secondary'} btn-large`}
+                        onClick={handleRevealName}
+                        style={{ opacity: revealingEnded || allVoted ? 1 : 0.8 }}
+                    >
+                        {revealingEnded || allVoted ? '✨ Reveal The Name!' : '⏭️ Skip and Reveal Name'}
                     </button>
                 </div>
             </div>

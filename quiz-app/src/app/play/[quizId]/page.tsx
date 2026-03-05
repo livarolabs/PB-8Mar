@@ -487,6 +487,8 @@ export default function PlayerPage() {
 
     // ── REVEALING state (2nd pic, no results yet) ───────────────
     if (currentRound.status === 'revealing' && currentPerson) {
+        const revealingTimedOut = currentRound.revealingEndsAt ? Date.now() > currentRound.revealingEndsAt : false;
+
         return (
             <div className="player-screen">
                 <div className="animate-in">
@@ -529,6 +531,18 @@ export default function PlayerPage() {
                                 <span></span><span></span><span></span>
                             </div>
                         </div>
+                    ) : revealingTimedOut ? (
+                        <div style={{
+                            textAlign: 'center',
+                            padding: '16px',
+                            background: 'rgba(236, 72, 153, 0.1)',
+                            borderRadius: 14,
+                            border: '1px solid var(--pink)',
+                        }}>
+                            <p style={{ color: 'var(--pink)', fontWeight: 700 }}>
+                                {t.timesUp}
+                            </p>
+                        </div>
                     ) : (
                         <div className="player-options animate-in">
                             <div style={{ textAlign: 'center', marginBottom: 12 }}>
@@ -536,6 +550,15 @@ export default function PlayerPage() {
                                     {t.lastChance1pt}
                                 </span>
                             </div>
+
+                            {!votedThisRound && currentRound.revealingEndsAt && (
+                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                                    <div style={{ transform: 'scale(0.6)' }}>
+                                        <Countdown endsAt={currentRound.revealingEndsAt} onComplete={() => { }} />
+                                    </div>
+                                </div>
+                            )}
+
                             {shuffledPersonNames.map((person: Person) => (
                                 <button
                                     key={person.id}

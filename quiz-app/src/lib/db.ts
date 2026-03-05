@@ -230,9 +230,12 @@ export async function revealCaricature(quizId: string) {
 
     const quiz = quizSnapshot.val();
     const idx = quiz.currentRoundIndex || 0;
+    const isWaitForAll = quiz.settings?.votingMode === 'all_voted';
+    const duration = (quiz.settings?.votingDuration || 15) * 1000;
 
     await update(child(quizRef, `rounds/${idx}`), {
-        status: 'revealing'
+        status: 'revealing',
+        revealingEndsAt: isWaitForAll ? null : Date.now() + duration,
     });
 }
 
@@ -396,6 +399,7 @@ export async function submitVote(quizId: string, playerId: string, guessedPerson
     if (!round) return;
     if (round.status !== 'voting' && round.status !== 'revealing') return;
     if (round.status === 'voting' && round.votingEndsAt && Date.now() > round.votingEndsAt) return;
+    if (round.status === 'revealing' && round.revealingEndsAt && Date.now() > round.revealingEndsAt) return;
 
     // Check if already voted
     if (round.votes && round.votes[playerId]) return;

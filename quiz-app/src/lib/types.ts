@@ -19,6 +19,7 @@ export interface Round {
   personId: string;
   status: 'pending' | 'voting' | 'revealing' | 'revealed';
   votingEndsAt: number | null;
+  revealingEndsAt: number | null;
   votes: Record<string, Vote> | null;
 }
 
