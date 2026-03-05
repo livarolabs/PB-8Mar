@@ -482,22 +482,26 @@ function HostDashboard() {
                     Players can still vote for 1 point
                 </p>
                 <style>{`
-                    @keyframes cardFlipIn {
-                        0% { transform: perspective(800px) rotateY(90deg) scale(0.7); opacity: 0; filter: blur(10px); }
-                        40% { transform: perspective(800px) rotateY(-10deg) scale(1.08); opacity: 1; filter: blur(0); }
-                        60% { transform: perspective(800px) rotateY(5deg) scale(1.03); }
-                        80% { transform: perspective(800px) rotateY(-2deg) scale(1.01); }
-                        100% { transform: perspective(800px) rotateY(0deg) scale(1.05); }
+                    @keyframes zoomReveal {
+                        0% { transform: scale(0); opacity: 0; }
+                        50% { transform: scale(1.12); opacity: 1; }
+                        70% { transform: scale(0.97); }
+                        85% { transform: scale(1.06); }
+                        100% { transform: scale(1.05); }
                     }
                     @keyframes glowPulse {
                         0%, 100% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.4), 0 20px 40px rgba(0,0,0,0.3); }
-                        50% { box-shadow: 0 0 40px rgba(236, 72, 153, 0.7), 0 20px 60px rgba(0,0,0,0.4); }
+                        50% { box-shadow: 0 0 50px rgba(236, 72, 153, 0.8), 0 20px 60px rgba(0,0,0,0.4); }
+                    }
+                    @keyframes borderShimmer {
+                        0% { border-color: var(--pink); }
+                        50% { border-color: var(--gold); }
+                        100% { border-color: var(--pink); }
                     }
                 `}</style>
                 <div className="host-caricature" style={{
                     border: '3px solid var(--pink)',
-                    animation: 'cardFlipIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowPulse 2s ease-in-out 0.8s infinite',
-                    transformOrigin: 'center center',
+                    animation: 'zoomReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowPulse 2s ease-in-out 0.7s infinite, borderShimmer 3s ease-in-out 0.7s infinite',
                 }}>
                     <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
                 </div>
