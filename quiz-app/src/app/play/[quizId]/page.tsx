@@ -243,12 +243,12 @@ export default function PlayerPage() {
                                     <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400" alt="Demo" style={{ borderRadius: 12 }} />
                                 </div>
                                 <div className="player-options" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                                    <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 12 }} onClick={() => handleDemoVote(true)}>Woman A</button>
-                                    <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 12 }} onClick={() => handleDemoVote(false)}>Woman B</button>
+                                    <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 12 }} onClick={() => handleDemoVote(true)}>{t.tutorialDemoOptionA}</button>
+                                    <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 12 }} onClick={() => handleDemoVote(false)}>{t.tutorialDemoOptionB}</button>
                                 </div>
                                 {demoVoted && (
                                     <p className="animate-in" style={{ marginTop: 12, color: 'var(--gold)', fontWeight: 700, fontSize: 14 }}>
-                                        {demoScore > 0 ? "Correct! +2 Pts" : "Not quite! 😅"}
+                                        {demoScore > 0 ? t.tutorialDemoCorrect : t.tutorialDemoWrong}
                                     </p>
                                 )}
                             </div>
@@ -256,8 +256,8 @@ export default function PlayerPage() {
                         {tutorialStep === 4 && (
                             <div className="animate-in">
                                 <span style={{ fontSize: 64 }}>🚀</span>
-                                <h3 style={{ fontSize: 22, marginTop: 20, fontWeight: 800 }}>Great job!</h3>
-                                <p style={{ color: 'var(--text-secondary)', marginTop: 12 }}>You're all set to play the real game.</p>
+                                <h3 style={{ fontSize: 22, marginTop: 20, fontWeight: 800 }}>{t.tutorialComplete}</h3>
+                                <p style={{ color: 'var(--text-secondary)', marginTop: 12 }}>{t.tutorialCompleteDesc}</p>
                             </div>
                         )}
                     </div>
@@ -358,10 +358,10 @@ export default function PlayerPage() {
                 <div className="waiting-state">
                     <span style={{ fontSize: 48 }}>🎯</span>
                     <h2 style={{ fontFamily: 'Outfit', fontSize: 20, fontWeight: 700 }}>
-                        Round {quiz.currentRoundIndex + 1} of {quiz.rounds.length}
+                        {t.round} {quiz.currentRoundIndex + 1} {t.of} {quiz.rounds.length}
                     </h2>
                     <p style={{ color: 'var(--text-secondary)' }}>
-                        Waiting for the host to start...
+                        {t.waitingForHostToStart}
                     </p>
                     <div style={{
                         padding: '12px 20px',
@@ -370,7 +370,7 @@ export default function PlayerPage() {
                         border: '1px solid var(--border-color)',
                         marginTop: 8,
                     }}>
-                        <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>Your score: </span>
+                        <span style={{ fontSize: 14, color: 'var(--text-muted)' }}>{t.yourScore}: </span>
                         <span className="text-gradient" style={{ fontWeight: 800, fontSize: 18 }}>
                             {player.score}
                         </span>
@@ -408,7 +408,7 @@ export default function PlayerPage() {
 
                     <div style={{ textAlign: 'center', marginBottom: 16 }}>
                         <span className="host-badge" style={{ background: 'var(--gold)', color: '#000', fontSize: 11 }}>
-                            🎯 Correct answer: 2 Points
+                            {t.correctAnswer2pts}
                         </span>
                     </div>
 
@@ -508,7 +508,7 @@ export default function PlayerPage() {
                         <div className="player-options animate-in">
                             <div style={{ textAlign: 'center', marginBottom: 12 }}>
                                 <span className="host-badge" style={{ background: 'var(--gold)', color: '#000', fontSize: 11 }}>
-                                    🎯 Last chance: 1 Point
+                                    {t.lastChance1pt}
                                 </span>
                             </div>
                             {shuffledPersonNames.map((person: Person) => (

@@ -21,6 +21,9 @@ export interface Translations {
     waitingForReveal: string;
     timesUp: string;
     everyoneVoted: string;
+    correctAnswer2pts: string;
+    lastChance1pt: string;
+    waitingForHostToStart: string;
 
     // Result Screen
     correct: string;
@@ -35,6 +38,8 @@ export interface Translations {
     checkHostScreen: string;
     hi: string;
     isItWhoYouThought: string;
+
+    // Tutorial
     tutorialTitle: string;
     tutorialStep1: string;
     tutorialStep2: string;
@@ -44,6 +49,12 @@ export interface Translations {
     tutorialStart: string;
     imReady: string;
     ready: string;
+    tutorialDemoOptionA: string;
+    tutorialDemoOptionB: string;
+    tutorialDemoCorrect: string;
+    tutorialDemoWrong: string;
+    tutorialComplete: string;
+    tutorialCompleteDesc: string;
 }
 
 export const translations: Record<Language, Translations> = {
@@ -63,6 +74,9 @@ export const translations: Record<Language, Translations> = {
         waitingForReveal: "Waiting for reveal...",
         timesUp: "Time's up!",
         everyoneVoted: "Everyone has voted!",
+        correctAnswer2pts: "🎯 Correct answer: 2 Points",
+        lastChance1pt: "🎯 Last chance: 1 Point",
+        waitingForHostToStart: "Waiting for the host to start...",
         correct: "Correct! 🎉",
         notQuite: "Not quite! 😅",
         itWas: "It was",
@@ -82,6 +96,12 @@ export const translations: Record<Language, Translations> = {
         tutorialStart: "Start Tutorial",
         imReady: "I'm Ready! 🚀",
         ready: "Ready",
+        tutorialDemoOptionA: "Person A",
+        tutorialDemoOptionB: "Person B",
+        tutorialDemoCorrect: "Correct! +2 Pts 🎉",
+        tutorialDemoWrong: "Not quite! 😅",
+        tutorialComplete: "Great job!",
+        tutorialCompleteDesc: "You're all set to play the real game.",
     },
     hu: {
         welcomeTitle: "Üdvözöljük a kvízben!",
@@ -99,6 +119,9 @@ export const translations: Record<Language, Translations> = {
         waitingForReveal: "Várakozás a felfedésre...",
         timesUp: "Lejárt az idő!",
         everyoneVoted: "Mindenki szavazott!",
+        correctAnswer2pts: "🎯 Helyes válasz: 2 pont",
+        lastChance1pt: "🎯 Utolsó esély: 1 pont",
+        waitingForHostToStart: "Várakozás a házigazdára...",
         correct: "Helyes! 🎉",
         notQuite: "Nem egészen! 😅",
         itWas: "Ez",
@@ -118,9 +141,15 @@ export const translations: Record<Language, Translations> = {
         tutorialStart: "Tanfolyam indítása",
         imReady: "Készen állok! 🚀",
         ready: "Kész",
+        tutorialDemoOptionA: "Személy A",
+        tutorialDemoOptionB: "Személy B",
+        tutorialDemoCorrect: "Helyes! +2 pont 🎉",
+        tutorialDemoWrong: "Nem egészen! 😅",
+        tutorialComplete: "Szuper!",
+        tutorialCompleteDesc: "Készen állsz a játékra.",
     },
     ua: {
-        welcomeTitle: "Welcome to the quiz!",
+        welcomeTitle: "Ласкаво просимо до квізу!",
         enterName: "Введіть ваше ім'я",
         joinButton: "Приєднатися 🚀",
         joining: "Приєднання...",
@@ -135,6 +164,9 @@ export const translations: Record<Language, Translations> = {
         waitingForReveal: "Чекаємо на розкриття...",
         timesUp: "Час вийшов!",
         everyoneVoted: "Всі проголосували!",
+        correctAnswer2pts: "🎯 Правильна відповідь: 2 бали",
+        lastChance1pt: "🎯 Останній шанс: 1 бал",
+        waitingForHostToStart: "Чекаємо на ведучого...",
         correct: "Правильно! 🎉",
         notQuite: "Не зовсім! 😅",
         itWas: "Це був",
@@ -154,6 +186,12 @@ export const translations: Record<Language, Translations> = {
         tutorialStart: "Почати навчання",
         imReady: "Я готовий(а)! 🚀",
         ready: "Готовий(а)",
+        tutorialDemoOptionA: "Особа A",
+        tutorialDemoOptionB: "Особа B",
+        tutorialDemoCorrect: "Правильно! +2 бали 🎉",
+        tutorialDemoWrong: "Не зовсім! 😅",
+        tutorialComplete: "Чудово!",
+        tutorialCompleteDesc: "Ви готові до гри.",
     },
     ru: {
         welcomeTitle: "Добро пожаловать в квиз!",
@@ -171,6 +209,9 @@ export const translations: Record<Language, Translations> = {
         waitingForReveal: "Ожидание раскрытия...",
         timesUp: "Время вышло!",
         everyoneVoted: "Все проголосовали!",
+        correctAnswer2pts: "🎯 Правильный ответ: 2 балла",
+        lastChance1pt: "🎯 Последний шанс: 1 балл",
+        waitingForHostToStart: "Ожидание ведущего...",
         correct: "Правильно! 🎉",
         notQuite: "Не совсем! 😅",
         itWas: "Это был",
@@ -190,5 +231,11 @@ export const translations: Record<Language, Translations> = {
         tutorialStart: "Начать обучение",
         imReady: "Я готов(а)! 🚀",
         ready: "Готов(а)",
+        tutorialDemoOptionA: "Человек A",
+        tutorialDemoOptionB: "Человек B",
+        tutorialDemoCorrect: "Правильно! +2 балла 🎉",
+        tutorialDemoWrong: "Не совсем! 😅",
+        tutorialComplete: "Отлично!",
+        tutorialCompleteDesc: "Вы готовы к игре.",
     },
 };
