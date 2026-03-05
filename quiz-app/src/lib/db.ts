@@ -67,7 +67,7 @@ export function subscribeToQuiz(quizId: string, callback: (quiz: Quiz | null) =>
             status: data.status || 'draft',
             currentRoundIndex: data.currentRoundIndex || 0,
             ownerId: data.ownerId || '',
-            settings: data.settings || { votingDuration: 15 },
+            settings: data.settings || { votingDuration: 15, votingMode: 'countdown' },
             persons: data.persons ? (Object.values(data.persons) as Person[]).sort((a: any, b: any) => a.orderIndex - b.orderIndex) : [],
             players: data.players ? (Object.values(data.players) as Player[]) : [],
             rounds: data.rounds ? (Object.values(data.rounds) as Round[]) : [],
@@ -90,7 +90,8 @@ export async function createQuiz(title: string, ownerId: string): Promise<string
         currentRoundIndex: 0,
         ownerId,
         settings: {
-            votingDuration: 15
+            votingDuration: 15,
+            votingMode: 'countdown'
         },
         createdAt: Date.now(),
         persons: {},
@@ -182,11 +183,12 @@ export async function startRound(quizId: string) {
 
     const quiz = quizSnapshot.val();
     const idx = quiz.currentRoundIndex || 0;
+    const isWaitForAll = quiz.settings?.votingMode === 'all_voted';
     const duration = (quiz.settings?.votingDuration || 15) * 1000;
 
     await update(child(quizRef, `rounds/${idx}`), {
         status: 'voting',
-        votingEndsAt: Date.now() + duration,
+        votingEndsAt: isWaitForAll ? null : Date.now() + duration,
         votes: {}
     });
 }

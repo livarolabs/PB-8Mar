@@ -67,13 +67,41 @@ function HostDashboard() {
     useEffect(() => {
         if (!quiz) return;
         const round = quiz.rounds[quiz.currentRoundIndex];
-        if (!round || round.status !== 'voting' || !round.votingEndsAt) {
+        if (!round || round.status !== 'voting') {
+            setVotingEnded(false);
+            return;
+        }
+
+        const isWaitForAll = quiz.settings?.votingMode === 'all_voted';
+        const votesCount = round.votes ? Object.keys(round.votes).length : 0;
+        const playersCount = quiz.players.length;
+
+        if (isWaitForAll) {
+            // Mode: Wait until all players have voted
+            if (playersCount > 0 && votesCount >= playersCount) {
+                setVotingEnded(true);
+            } else {
+                setVotingEnded(false);
+            }
+            return;
+        }
+
+        // Mode: Countdown
+        const everyoneVoted = playersCount > 0 && votesCount >= playersCount;
+        if (everyoneVoted) {
+            setVotingEnded(true);
+            return;
+        }
+
+        if (!round.votingEndsAt) {
             setVotingEnded(false);
             return;
         }
 
         const check = () => {
-            if (round.votingEndsAt && Date.now() > round.votingEndsAt) {
+            const now = Date.now();
+            // Re-check votes from the latest round object in closure (effectively same as quiz since it depends on it)
+            if (round.votingEndsAt && now > round.votingEndsAt) {
                 setVotingEnded(true);
             }
         };
@@ -325,38 +353,54 @@ function HostDashboard() {
                 </div>
 
                 <div style={{ marginTop: 32 }}>
-                    {!votingEnded && currentRound.votingEndsAt ? (
-                        <input
-                            type="hidden" // Just to trigger re-render
-                            value={votingEnded ? '1' : '0'}
-                        />
-                    ) : null}
-                    {!votingEnded && currentRound.votingEndsAt && (
-                        <Countdown
-                            endsAt={currentRound.votingEndsAt}
-                            onComplete={() => setVotingEnded(true)}
-                        />
-                    )}
-                    {votingEnded && (
+                    {quiz.settings?.votingMode === 'all_voted' ? (
                         <div style={{ textAlign: 'center' }}>
-                            <p style={{
-                                fontSize: 20,
-                                fontWeight: 700,
-                                color: 'var(--gold)',
-                                marginBottom: 8,
-                            }}>
-                                ⏰ Time&apos;s up! {votesCount} votes received
-                            </p>
+                            <div className="glass-card" style={{ display: 'inline-block', padding: '16px 32px' }}>
+                                <div style={{ fontSize: 24, fontWeight: 800, color: votingEnded ? 'var(--pink)' : 'var(--gold)', marginBottom: 8 }}>
+                                    {votesCount} / {quiz.players.length}
+                                </div>
+                                <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>
+                                    {votingEnded ? '🙌 Everyone has voted!' : 'Waiting for more votes...'}
+                                </div>
+                            </div>
                         </div>
+                    ) : (
+                        <>
+                            {!votingEnded && currentRound.votingEndsAt && (
+                                <Countdown
+                                    endsAt={currentRound.votingEndsAt}
+                                    onComplete={() => setVotingEnded(true)}
+                                />
+                            )}
+                            {votingEnded && (
+                                <div style={{ textAlign: 'center' }}>
+                                    <p style={{
+                                        fontSize: 20,
+                                        fontWeight: 700,
+                                        color: 'var(--gold)',
+                                        marginBottom: 8,
+                                    }}>
+                                        {votesCount >= quiz.players.length && quiz.players.length > 0
+                                            ? "🙌 Everyone has voted!"
+                                            : "⏰ Time's up!"}
+                                    </p>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
+                                        {votesCount} votes received
+                                    </p>
+                                </div>
+                            )}
+                        </>
                     )}
                 </div>
 
                 <div className="host-controls">
-                    {votingEnded && (
-                        <button className="btn btn-primary btn-large" onClick={handleReveal}>
-                            ✨ Reveal Answer
-                        </button>
-                    )}
+                    <button
+                        className={`btn ${votingEnded ? 'btn-primary' : 'btn-secondary'} btn-large`}
+                        onClick={handleReveal}
+                        style={{ opacity: votingEnded ? 1 : 0.8 }}
+                    >
+                        {votingEnded ? '👀 Reveal Answer' : '⏭️ Skip and Reveal'}
+                    </button>
                 </div>
             </div>
         );

@@ -35,6 +35,7 @@ export interface Quiz {
   ownerId: string;
   settings: {
     votingDuration: number; // in seconds
+    votingMode: 'countdown' | 'all_voted';
   };
   persons: Person[];
   rounds: Round[];

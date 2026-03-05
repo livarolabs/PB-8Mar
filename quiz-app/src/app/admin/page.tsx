@@ -138,10 +138,14 @@ function AdminDashboard() {
         }
     }, [quizId]);
 
-    const handleUpdateSettings = useCallback(async (newDuration: number) => {
+    const handleUpdateSettings = useCallback(async (newDuration: number, mode?: 'countdown' | 'all_voted') => {
         if (!quizId || !quiz) return;
         try {
-            await updateQuizSettings(quizId, { ...quiz.settings, votingDuration: newDuration });
+            await updateQuizSettings(quizId, {
+                ...quiz.settings,
+                votingDuration: newDuration,
+                votingMode: mode || quiz.settings.votingMode || 'countdown'
+            });
         } catch (err: any) {
             showError(`Failed to update settings: ${err.message}`);
         }
@@ -348,28 +352,71 @@ function AdminDashboard() {
                             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
                                 Quiz Settings ⚙️
                             </h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                    <label style={{ fontSize: 14 }}>Voting Time (seconds)</label>
-                                    <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--pink)' }}>
-                                        {quiz.settings?.votingDuration || 15}s
-                                    </span>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                {/* Mode Toggle */}
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                        Voting Mode
+                                    </label>
+                                    <div style={{
+                                        display: 'flex',
+                                        background: 'rgba(255,255,255,0.05)',
+                                        padding: 4,
+                                        borderRadius: 12,
+                                        border: '1px solid var(--border-color)'
+                                    }}>
+                                        <button
+                                            className={`btn ${quiz.settings?.votingMode !== 'all_voted' ? 'btn-primary' : ''}`}
+                                            style={{ flex: 1, height: 36, fontSize: 13, border: 'none', borderRadius: 8 }}
+                                            onClick={() => handleUpdateSettings(quiz.settings?.votingDuration || 15, 'countdown')}
+                                        >
+                                            ⏱️ Countdown
+                                        </button>
+                                        <button
+                                            className={`btn ${quiz.settings?.votingMode === 'all_voted' ? 'btn-primary' : ''}`}
+                                            style={{ flex: 1, height: 36, fontSize: 13, border: 'none', borderRadius: 8 }}
+                                            onClick={() => handleUpdateSettings(quiz.settings?.votingDuration || 15, 'all_voted')}
+                                        >
+                                            🤝 Wait for All
+                                        </button>
+                                    </div>
                                 </div>
-                                <input
-                                    type="range"
-                                    min="5"
-                                    max="60"
-                                    step="5"
-                                    value={quiz.settings?.votingDuration || 15}
-                                    onChange={(e) => handleUpdateSettings(parseInt(e.target.value))}
-                                    className="slider"
-                                    style={{ width: '100%', cursor: 'pointer' }}
-                                />
-                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
-                                    <span>5s</span>
-                                    <span>30s</span>
-                                    <span>60s</span>
-                                </div>
+
+                                {/* Timer Slider (Visible only in countdown mode) */}
+                                {quiz.settings?.votingMode !== 'all_voted' && (
+                                    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <label style={{ fontSize: 14 }}>Voting Time</label>
+                                            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--pink)' }}>
+                                                {quiz.settings?.votingDuration || 15}s
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min="5"
+                                            max="60"
+                                            step="5"
+                                            value={quiz.settings?.votingDuration || 15}
+                                            onChange={(e) => handleUpdateSettings(parseInt(e.target.value), 'countdown')}
+                                            className="slider"
+                                            style={{ width: '100%', cursor: 'pointer' }}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
+                                            <span>5s</span>
+                                            <span>30s</span>
+                                            <span>60s</span>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {quiz.settings?.votingMode === 'all_voted' && (
+                                    <div className="animate-in" style={{ padding: '8px 12px', background: 'rgba(236, 72, 153, 0.05)', borderRadius: 8, border: '1px solid rgba(236, 72, 153, 0.1)' }}>
+                                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                                            Rounds will stay open until every player has submitted their vote.
+                                        </p>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
