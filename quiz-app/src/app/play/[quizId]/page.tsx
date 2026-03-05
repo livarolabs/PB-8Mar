@@ -439,10 +439,6 @@ export default function PlayerPage() {
                         </h2>
                     </div>
 
-                    <div className="player-caricature" style={{ marginBottom: 12 }}>
-                        <img src={currentPerson.caricatureUrl1} alt="Guess who?" />
-                    </div>
-
                     <div style={{ textAlign: 'center', marginBottom: 16 }}>
                         <span className="host-badge" style={{ background: 'var(--gold)', color: '#000', fontSize: 11 }}>
                             {t.correctAnswer2pts}
@@ -560,10 +556,6 @@ export default function PlayerPage() {
                         }}>
                             {t.whoIsThis}
                         </h2>
-                    </div>
-
-                    <div className="player-caricature" style={{ marginBottom: 12 }}>
-                        <img src={currentPerson.caricatureUrl2} alt="Guess who? (Image 2)" />
                     </div>
 
                     <div style={{ textAlign: 'center', marginBottom: 16 }}>
@@ -707,28 +699,6 @@ export default function PlayerPage() {
                                 </p>
                             </>
                         )}
-                    </div>
-
-                    <div style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 1fr',
-                        gap: 12,
-                        marginBottom: 20,
-                    }}>
-                        <div style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '3/4' }}>
-                            <img
-                                src={currentPerson.caricatureUrl1}
-                                alt="Caricature 1"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                        </div>
-                        <div style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '3/4', border: '2px solid var(--pink)' }}>
-                            <img
-                                src={currentPerson.caricatureUrl2}
-                                alt="Caricature 2"
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                        </div>
                     </div>
 
                     <div className="player-score-display" style={{
