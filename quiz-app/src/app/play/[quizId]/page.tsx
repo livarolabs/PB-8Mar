@@ -66,12 +66,6 @@ export default function PlayerPage() {
                         setSelectedPersonId(null);
                         setVotingEnded(false);
                     }
-                    // Reset vote state when entering revealing (2nd image)
-                    if (prevRound?.status === 'voting' && newRound?.status === 'revealing') {
-                        setVotedThisRound(false);
-                        setSelectedPersonId(null);
-                        setVotingEnded(false);
-                    }
                 }
                 return q;
             });
@@ -108,6 +102,23 @@ export default function PlayerPage() {
             localStorage.setItem(`player_${quizId}`, JSON.stringify(newPlayer));
         }
     }, [quiz, player, quizId]);
+
+    // Hydrate vote state from backend
+    useEffect(() => {
+        if (!quiz || !player) return;
+        const currentRound = quiz.rounds[quiz.currentRoundIndex];
+        if (!currentRound) return;
+
+        const myVoteId = Object.keys(currentRound.votes || {}).find(
+            key => currentRound.votes?.[key]?.playerId === player.id
+        );
+        const myVote = myVoteId && currentRound.votes ? currentRound.votes[myVoteId] : null;
+
+        if (myVote && !votedThisRound) {
+            setVotedThisRound(true);
+            setSelectedPersonId(myVote.guessedPersonId);
+        }
+    }, [quiz, player, votedThisRound]);
 
     const handleJoin = useCallback(async () => {
         if (!nickname.trim()) return;
