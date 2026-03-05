@@ -320,40 +320,60 @@ export async function resetQuiz(quizId: string) {
     await update(quizRef, updates);
 }
 
-// Player API
+// Firebase REST API base URL for player-facing operations
+// The SDK WebSocket can fail on mobile browsers, so we use REST for reliability
+const DB_REST_URL = process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL;
+
+async function restGet(path: string): Promise<any> {
+    const res = await fetch(`${DB_REST_URL}/${path}.json`, { method: 'GET' });
+    if (!res.ok) throw new Error(`REST GET failed: ${res.status}`);
+    return res.json();
+}
+
+async function restPut(path: string, data: any): Promise<void> {
+    const res = await fetch(`${DB_REST_URL}/${path}.json`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`REST PUT failed: ${res.status}`);
+}
+
+async function restPatch(path: string, data: any): Promise<void> {
+    const res = await fetch(`${DB_REST_URL}/${path}.json`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+    });
+    if (!res.ok) throw new Error(`REST PATCH failed: ${res.status}`);
+}
+
+// Player API — uses REST for mobile reliability
 export async function joinQuiz(displayName: string, quizId: string, language: Language = 'en'): Promise<Player | null> {
-    console.log('[joinQuiz] Starting...', { displayName, quizId, language });
-    const quizRef = dbRef(db, `quizzes/${quizId}`);
+    console.log('[joinQuiz] Starting via REST...', { displayName, quizId, language });
     try {
-        console.log('[joinQuiz] Fetching quiz data...');
-        const qs = await getOnce(quizRef);
-        console.log('[joinQuiz] Got quiz snapshot, exists:', qs.exists());
-        if (!qs.exists()) {
+        const quiz = await restGet(`quizzes/${quizId}`);
+        if (!quiz) {
             console.error('[joinQuiz] quiz not found', quizId);
             return null;
         }
-
-        const quiz = qs.val();
         console.log('[joinQuiz] Players count:', quiz.players ? Object.keys(quiz.players).length : 0);
 
         // Check if player already exists
         if (quiz.players) {
             const existingEntry = Object.entries(quiz.players).find(
-                ([, p]: [string, any]) => p.displayName?.toLowerCase() === displayName.toLowerCase()
+                ([, p]: [string, any]) => (p as any).displayName?.toLowerCase() === displayName.toLowerCase()
             );
             if (existingEntry) {
                 const [existingId, existingData] = existingEntry as [string, any];
                 console.log('[joinQuiz] Found existing player:', existingId);
-                // Update language if changed, and backfill missing fields
                 const updates: Record<string, any> = {};
                 if (existingData.language !== language) updates.language = language;
                 if (existingData.isReady === undefined) updates.isReady = false;
                 if (existingData.isTutorialFinished === undefined) updates.isTutorialFinished = false;
 
                 if (Object.keys(updates).length > 0) {
-                    console.log('[joinQuiz] Updating existing player fields:', updates);
-                    await update(child(quizRef, `players/${existingId}`), updates);
-                    console.log('[joinQuiz] Updated existing player');
+                    await restPatch(`quizzes/${quizId}/players/${existingId}`, updates);
                 }
 
                 return {
@@ -377,8 +397,8 @@ export async function joinQuiz(displayName: string, quizId: string, language: La
             isTutorialFinished: false,
         };
 
-        console.log('[joinQuiz] Creating new player:', id);
-        await set(child(quizRef, `players/${id}`), player);
+        console.log('[joinQuiz] Creating new player via REST:', id);
+        await restPut(`quizzes/${quizId}/players/${id}`, player);
         console.log('[joinQuiz] Player created successfully');
         return player;
     } catch (error) {
@@ -388,42 +408,53 @@ export async function joinQuiz(displayName: string, quizId: string, language: La
 }
 
 export async function submitVote(quizId: string, playerId: string, guessedPersonId: string) {
-    const quizRef = dbRef(db, `quizzes/${quizId}`);
-    const qs = await getOnce(quizRef);
-    if (!qs.exists()) return;
+    try {
+        const quiz = await restGet(`quizzes/${quizId}`);
+        if (!quiz) return;
 
-    const quiz = qs.val();
-    const idx = quiz.currentRoundIndex || 0;
-    const round = quiz.rounds && quiz.rounds[idx];
+        const idx = quiz.currentRoundIndex || 0;
+        const round = quiz.rounds && quiz.rounds[idx];
 
-    if (!round) return;
-    if (round.status !== 'voting' && round.status !== 'revealing') return;
-    if (round.status === 'voting' && round.votingEndsAt && Date.now() > round.votingEndsAt) return;
-    if (round.status === 'revealing' && round.revealingEndsAt && Date.now() > round.revealingEndsAt) return;
+        if (!round) return;
+        if (round.status !== 'voting' && round.status !== 'revealing') return;
+        if (round.status === 'voting' && round.votingEndsAt && Date.now() > round.votingEndsAt) return;
+        if (round.status === 'revealing' && round.revealingEndsAt && Date.now() > round.revealingEndsAt) return;
 
-    // Check if already voted
-    if (round.votes && round.votes[playerId]) return;
+        // Check if already voted
+        if (round.votes && round.votes[playerId]) return;
 
-    const points = round.status === 'voting' ? 2 : 1;
+        const points = round.status === 'voting' ? 2 : 1;
 
-    const vote: Vote = {
-        playerId,
-        guessedPersonId,
-        timestamp: Date.now(),
-        points
-    };
+        const vote: Vote = {
+            playerId,
+            guessedPersonId,
+            timestamp: Date.now(),
+            points
+        };
 
-    await set(child(quizRef, `rounds/${idx}/votes/${playerId}`), vote);
+        await restPut(`quizzes/${quizId}/rounds/${idx}/votes/${playerId}`, vote);
+    } catch (e) {
+        console.error('[submitVote] ERROR:', e);
+        throw e;
+    }
 }
 
 export async function setPlayerReady(quizId: string, playerId: string, isReady: boolean) {
-    const playerRef = dbRef(db, `quizzes/${quizId}/players/${playerId}`);
-    await update(playerRef, { isReady });
+    try {
+        await restPatch(`quizzes/${quizId}/players/${playerId}`, { isReady });
+    } catch (e) {
+        console.error('[setPlayerReady] ERROR:', e);
+        throw e;
+    }
 }
 
 export async function setTutorialFinished(quizId: string, playerId: string) {
-    const playerRef = dbRef(db, `quizzes/${quizId}/players/${playerId}`);
-    await update(playerRef, { isTutorialFinished: true });
+    try {
+        await restPatch(`quizzes/${quizId}/players/${playerId}`, { isTutorialFinished: true });
+    } catch (e) {
+        console.error('[setTutorialFinished] ERROR:', e);
+        throw e;
+    }
 }
 
 // Storage API
