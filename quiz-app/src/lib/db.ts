@@ -69,34 +69,51 @@ export async function listQuizzes(ownerId?: string): Promise<Quiz[]> {
     return quizzes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) as Quiz[];
 }
 
-// Listener for a specific quiz
+// Listener for a specific quiz via REST polling
+// We use polling (every 1.5s) instead of Firebase WebSockets (onValue) 
+// because WebSockets frequently drop or get blocked on mobile browsers.
 export function subscribeToQuiz(quizId: string, callback: (quiz: Quiz | null) => void) {
-    const quizRef = dbRef(db, `quizzes/${quizId}`);
-    onValue(quizRef, (snapshot) => {
-        if (!snapshot.exists()) {
-            callback(null);
-            return;
+    let isActive = true;
+    let timeoutId: NodeJS.Timeout;
+
+    const poll = async () => {
+        if (!isActive) return;
+        try {
+            const data = await restGet(`quizzes/${quizId}`);
+
+            if (!data) {
+                callback(null);
+            } else {
+                // Convert Firebase objects to arrays for easier mapping
+                const quiz: Quiz = {
+                    id: data.id || quizId,
+                    title: data.title || '',
+                    status: data.status || 'draft',
+                    currentRoundIndex: data.currentRoundIndex || 0,
+                    ownerId: data.ownerId || '',
+                    settings: data.settings || { votingDuration: 15, votingMode: 'countdown' },
+                    persons: data.persons ? (Object.values(data.persons) as Person[]).sort((a: any, b: any) => a.orderIndex - b.orderIndex) : [],
+                    players: data.players ? (Object.values(data.players) as Player[]) : [],
+                    rounds: data.rounds ? (Object.values(data.rounds) as Round[]) : [],
+                };
+                callback(quiz);
+            }
+        } catch (e) {
+            console.error('[subscribeToQuiz] Polling error:', e);
         }
 
-        const data = snapshot.val();
+        if (isActive) {
+            timeoutId = setTimeout(poll, 1500); // Poll every 1.5 seconds
+        }
+    };
 
-        // Convert Firebase objects to arrays for easier mapping
-        const quiz: Quiz = {
-            id: data.id || quizId,
-            title: data.title || '',
-            status: data.status || 'draft',
-            currentRoundIndex: data.currentRoundIndex || 0,
-            ownerId: data.ownerId || '',
-            settings: data.settings || { votingDuration: 15, votingMode: 'countdown' },
-            persons: data.persons ? (Object.values(data.persons) as Person[]).sort((a: any, b: any) => a.orderIndex - b.orderIndex) : [],
-            players: data.players ? (Object.values(data.players) as Player[]) : [],
-            rounds: data.rounds ? (Object.values(data.rounds) as Round[]) : [],
-        };
+    // Start polling immediate
+    poll();
 
-        callback(quiz);
-    });
-
-    return () => off(quizRef);
+    return () => {
+        isActive = false;
+        clearTimeout(timeoutId);
+    };
 }
 
 // Admin API
