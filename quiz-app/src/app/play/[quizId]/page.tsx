@@ -552,30 +552,33 @@ export default function PlayerPage() {
                         <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
                             {t.round} {quiz.currentRoundIndex + 1} {t.of} {quiz.rounds.length}
                         </p>
+                        <h2 style={{
+                            fontFamily: 'Outfit',
+                            fontSize: 20,
+                            fontWeight: 700,
+                            marginTop: 4,
+                        }}>
+                            {t.whoIsThis}
+                        </h2>
                     </div>
 
-                    <div className="player-result" style={{ marginBottom: 24 }}>
-                        <div className="player-result-icon">🧐</div>
-                        <p className="player-result-text">
-                            {t.isItWhoYouThought}
-                        </p>
+                    <div className="player-caricature" style={{ marginBottom: 12 }}>
+                        <img src={currentPerson.caricatureUrl2} alt="Guess who? (Image 2)" />
                     </div>
 
-                    <div style={{
-                        borderRadius: 24,
-                        overflow: 'hidden',
-                        aspectRatio: '3/4',
-                        border: '3px solid var(--pink)',
-                        boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-                        marginBottom: 24,
-                        transform: 'scale(1.05)',
-                    }}>
-                        <img
-                            src={currentPerson.caricatureUrl2}
-                            alt="Caricature 2"
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                        />
+                    <div style={{ textAlign: 'center', marginBottom: 16 }}>
+                        <span className="host-badge" style={{ background: 'var(--gold)', color: '#000', fontSize: 11 }}>
+                            {t.lastChance1pt}
+                        </span>
                     </div>
+
+                    {!votedThisRound && currentRound.revealingEndsAt && (
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+                            <div style={{ transform: 'scale(0.6)' }}>
+                                <Countdown endsAt={currentRound.revealingEndsAt} onComplete={() => { }} />
+                            </div>
+                        </div>
+                    )}
 
                     {votedThisRound ? (
                         <div className="vote-locked animate-in">
@@ -600,20 +603,15 @@ export default function PlayerPage() {
                             </p>
                         </div>
                     ) : (
-                        <div className="player-options animate-in">
-                            <div style={{ textAlign: 'center', marginBottom: 12 }}>
-                                <span className="host-badge" style={{ background: 'var(--gold)', color: '#000', fontSize: 11 }}>
-                                    {t.lastChance1pt}
-                                </span>
-                            </div>
-
-                            {!votedThisRound && currentRound.revealingEndsAt && (
-                                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-                                    <div style={{ transform: 'scale(0.6)' }}>
-                                        <Countdown endsAt={currentRound.revealingEndsAt} onComplete={() => { }} />
-                                    </div>
-                                </div>
-                            )}
+                        <div style={{
+                            maxHeight: '35vh',
+                            overflowY: 'auto',
+                            padding: '4px 0',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: 8,
+                            WebkitOverflowScrolling: 'touch',
+                        }}>
 
                             {shuffledPersonNames.map((person: Person, i: number) => (
                                 <button
