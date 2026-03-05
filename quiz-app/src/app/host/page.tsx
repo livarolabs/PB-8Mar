@@ -123,8 +123,7 @@ function HostDashboard() {
 
     const handleRevealCaricature = useCallback(async () => {
         if (!quizId) return;
-        setShowConfetti(true);
-        setTimeout(() => setShowConfetti(false), 4000);
+        setRevealingEnded(false);
         try {
             await revealCaricature(quizId);
         } catch (e) {
@@ -482,8 +481,24 @@ function HostDashboard() {
                 <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
                     Players can still vote for 1 point
                 </p>
-
-                <div className="host-caricature" style={{ border: '3px solid var(--pink)', transform: 'scale(1.05)' }}>
+                <style>{`
+                    @keyframes cardFlipIn {
+                        0% { transform: perspective(800px) rotateY(90deg) scale(0.7); opacity: 0; filter: blur(10px); }
+                        40% { transform: perspective(800px) rotateY(-10deg) scale(1.08); opacity: 1; filter: blur(0); }
+                        60% { transform: perspective(800px) rotateY(5deg) scale(1.03); }
+                        80% { transform: perspective(800px) rotateY(-2deg) scale(1.01); }
+                        100% { transform: perspective(800px) rotateY(0deg) scale(1.05); }
+                    }
+                    @keyframes glowPulse {
+                        0%, 100% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.4), 0 20px 40px rgba(0,0,0,0.3); }
+                        50% { box-shadow: 0 0 40px rgba(236, 72, 153, 0.7), 0 20px 60px rgba(0,0,0,0.4); }
+                    }
+                `}</style>
+                <div className="host-caricature" style={{
+                    border: '3px solid var(--pink)',
+                    animation: 'cardFlipIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowPulse 2s ease-in-out 0.8s infinite',
+                    transformOrigin: 'center center',
+                }}>
                     <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
                 </div>
 
