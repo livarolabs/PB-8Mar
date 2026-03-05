@@ -3,8 +3,8 @@
 export interface Person {
   id: string;
   name: string;
-  caricatureUrl: string;
-  realPhotoUrl: string;
+  caricatureUrl1: string;
+  caricatureUrl2: string;
   orderIndex: number;
 }
 
@@ -21,10 +21,14 @@ export interface Round {
   votes: Record<string, Vote> | null;
 }
 
+import { Language } from './translations';
+
 export interface Player {
   id: string;
   displayName: string;
   score: number;
+  joinedAt: number;
+  language?: Language;
 }
 
 export interface Quiz {

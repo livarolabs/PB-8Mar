@@ -403,6 +403,13 @@ body {
   border-style: solid;
 }
 
+.upload-zone.has-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .upload-zone img {
   width: 100%;
   height: 100%;

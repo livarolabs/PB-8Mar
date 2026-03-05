@@ -6,6 +6,7 @@ import { subscribeToQuiz, joinQuiz, submitVote } from '@/lib/db';
 import { Quiz, Player, Person } from '@/lib/types';
 import Countdown from '@/components/Countdown';
 import Leaderboard from '@/components/Leaderboard';
+import { Language, translations } from '@/lib/translations';
 
 export default function PlayerPage() {
     const params = useParams();
@@ -18,6 +19,13 @@ export default function PlayerPage() {
     const [votedThisRound, setVotedThisRound] = useState(false);
     const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
     const [votingEnded, setVotingEnded] = useState(false);
+    const [selectedLanguage, setSelectedLanguage] = useState<Language>('en');
+
+    // Translation helper
+    const t = useMemo(() => {
+        const lang = player?.language || selectedLanguage;
+        return translations[lang];
+    }, [player?.language, selectedLanguage]);
 
     // Shuffle person names for voting (random for each player, but consistent for the round)
     const shuffledPersonNames = useMemo(() => {
@@ -121,19 +129,35 @@ export default function PlayerPage() {
         return (
             <div className="player-screen">
                 <div className="player-join animate-in">
-                    <div style={{ marginBottom: 8 }}>
-                        <span style={{ fontSize: 48 }}>💐</span>
+                    <div style={{ marginBottom: 16 }}>
+                        <span style={{ fontSize: 48 }}>🌍</span>
                     </div>
-                    <h1 className="player-join-title">Guess Who?</h1>
-                    <p style={{ color: 'var(--text-secondary)', fontSize: 15, maxWidth: 280 }}>
-                        Enter your name to join the quiz!
-                    </p>
+                    <h1 className="player-join-title">{t.welcomeTitle}</h1>
+
+                    <div style={{ marginBottom: 24, textAlign: 'center' }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                            {t.chooseLanguage}
+                        </p>
+                        <div style={{ display: 'flex', gap: 6, justifyContent: 'center' }}>
+                            {(['en', 'hu', 'ua', 'ru'] as Language[]).map(lang => (
+                                <button
+                                    key={lang}
+                                    onClick={() => setSelectedLanguage(lang)}
+                                    className={`btn ${selectedLanguage === lang ? 'btn-primary' : 'btn-secondary'}`}
+                                    style={{ padding: '6px 12px', minWidth: '45px', fontSize: 12 }}
+                                >
+                                    {lang.toUpperCase()}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     <div style={{ width: '100%', maxWidth: 300, display: 'flex', flexDirection: 'column', gap: 12 }}>
                         <input
                             className="input"
                             value={nickname}
                             onChange={e => setNickname(e.target.value)}
-                            placeholder="Your name..."
+                            placeholder={t.enterName + "..."}
                             onKeyDown={e => e.key === 'Enter' && handleJoin()}
                             autoFocus
                             style={{ textAlign: 'center', fontSize: 18, padding: '16px' }}
@@ -144,7 +168,7 @@ export default function PlayerPage() {
                             onClick={handleJoin}
                             disabled={!nickname.trim() || joining}
                         >
-                            {joining ? 'Joining...' : '🎉 Join Quiz'}
+                            {joining ? t.joining : t.joinButton}
                         </button>
                     </div>
                 </div>
@@ -159,10 +183,10 @@ export default function PlayerPage() {
                 <div className="waiting-state">
                     <span style={{ fontSize: 48 }}>⏳</span>
                     <h2 style={{ fontFamily: 'Outfit', fontSize: 22, fontWeight: 700 }}>
-                        Hi, {player.displayName}!
+                        {t.hi}, {player.displayName}!
                     </h2>
                     <p style={{ color: 'var(--text-secondary)' }}>
-                        Waiting for the quiz to start...
+                        {t.waitingForHost}
                     </p>
                     <div className="waiting-dots">
                         <span></span><span></span><span></span>
@@ -177,6 +201,8 @@ export default function PlayerPage() {
         ? quiz.persons.find(p => p.id === currentRound.personId)
         : null;
 
+    const votesCount = currentRound?.votes ? Object.keys(currentRound.votes).length : 0;
+
     // ── FINISHED state ──────────────────────────────────────────
     if (quiz.status === 'finished') {
         return (
@@ -190,12 +216,27 @@ export default function PlayerPage() {
                             fontWeight: 800,
                             marginTop: 8,
                         }}>
-                            <span className="text-gradient">Quiz Complete!</span>
+                            {t.quizFinished}
                         </h2>
-                        <p style={{ color: 'var(--text-secondary)', marginTop: 4 }}>
-                            Your final score: <strong className="text-gradient">{player.score}</strong> points
+                    </div>
+
+                    <div className="player-score-display" style={{ textAlign: 'center', marginBottom: 32 }}>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 13, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                            {t.finalScore}
+                        </p>
+                        <p className="text-gradient" style={{
+                            fontFamily: 'Outfit',
+                            fontSize: 64,
+                            fontWeight: 900,
+                            lineHeight: 1,
+                        }}>
+                            {player.score}
                         </p>
                     </div>
+
+                    <p style={{ textAlign: 'center', color: 'var(--text-secondary)', fontSize: 15 }}>
+                        {t.checkHostScreen}
+                    </p>
                     <Leaderboard
                         players={quiz.players}
                         currentPlayerId={player.id}
@@ -245,7 +286,7 @@ export default function PlayerPage() {
                 <div className="animate-in">
                     <div className="player-header">
                         <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                            Round {quiz.currentRoundIndex + 1} of {quiz.rounds.length}
+                            {t.round} {quiz.currentRoundIndex + 1} {t.of} {quiz.rounds.length}
                         </p>
                         <h2 style={{
                             fontFamily: 'Outfit',
@@ -253,12 +294,12 @@ export default function PlayerPage() {
                             fontWeight: 700,
                             marginTop: 4,
                         }}>
-                            Who is this? 🤔
+                            {t.whoIsThis}
                         </h2>
                     </div>
 
                     <div className="player-caricature">
-                        <img src={currentPerson.caricatureUrl} alt="Guess who?" />
+                        <img src={currentPerson.caricatureUrl1} alt="Guess who?" />
                     </div>
 
                     {!votedThisRound && !votingEnded && currentRound.votingEndsAt && (
@@ -271,30 +312,33 @@ export default function PlayerPage() {
 
                     {votedThisRound ? (
                         <div className="vote-locked animate-in">
-                            <p>✅ Vote locked!</p>
+                            <p>✅ {t.voteLocked}</p>
                             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-                                Waiting for reveal...
+                                {t.waitingForReveal}
                             </p>
                         </div>
                     ) : votingEnded ? (
                         <div style={{
                             textAlign: 'center',
-                            padding: 24,
-                            background: 'rgba(251, 191, 36, 0.1)',
-                            border: '1px solid rgba(251, 191, 36, 0.3)',
-                            borderRadius: 16,
-                            color: 'var(--gold)',
-                            fontWeight: 600,
+                            padding: '16px',
+                            background: 'rgba(236, 72, 153, 0.1)',
+                            borderRadius: 14,
+                            border: '1px solid var(--pink)',
                         }}>
-                            ⏰ Time&apos;s up! You didn&apos;t vote this round.
+                            <p style={{ color: 'var(--pink)', fontWeight: 700 }}>
+                                {votesCount >= quiz.players.length && quiz.players.length > 0
+                                    ? t.everyoneVoted
+                                    : t.timesUp}
+                            </p>
                         </div>
                     ) : (
-                        <div className="vote-grid">
+                        <div className="player-options">
                             {shuffledPersonNames.map((person: Person) => (
                                 <button
                                     key={person.id}
-                                    className={`btn-vote ${selectedPersonId === person.id ? 'selected' : ''}`}
+                                    className={`btn ${selectedPersonId === person.id ? 'btn-primary' : 'btn-secondary'}`}
                                     onClick={() => handleVote(person.id)}
+                                    disabled={votedThisRound}
                                 >
                                     {person.name}
                                 </button>
@@ -322,7 +366,7 @@ export default function PlayerPage() {
                 <div className="animate-in">
                     <div className="player-header">
                         <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                            Round {quiz.currentRoundIndex + 1} of {quiz.rounds.length}
+                            {t.round} {quiz.currentRoundIndex + 1} {t.of} {quiz.rounds.length}
                         </p>
                     </div>
 
@@ -333,18 +377,18 @@ export default function PlayerPage() {
                                     {isCorrect ? '🎉' : '😅'}
                                 </div>
                                 <p className="player-result-text">
-                                    {isCorrect ? 'Correct!' : 'Not quite!'}
+                                    {isCorrect ? t.correct : t.notQuite}
                                 </p>
                                 <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
-                                    It was <strong className="text-gradient">{currentPerson.name}</strong>
+                                    {t.itWas} <strong className="text-gradient">{currentPerson.name}</strong>
                                 </p>
                             </>
                         ) : (
                             <>
                                 <div className="player-result-icon">😶</div>
-                                <p className="player-result-text">No vote</p>
+                                <p className="player-result-text">{t.noVote}</p>
                                 <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
-                                    It was <strong className="text-gradient">{currentPerson.name}</strong>
+                                    {t.itWas} <strong className="text-gradient">{currentPerson.name}</strong>
                                 </p>
                             </>
                         )}
@@ -358,15 +402,15 @@ export default function PlayerPage() {
                     }}>
                         <div style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '3/4' }}>
                             <img
-                                src={currentPerson.caricatureUrl}
-                                alt="Caricature"
+                                src={currentPerson.caricatureUrl1}
+                                alt="Caricature 1"
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                         </div>
                         <div style={{ borderRadius: 16, overflow: 'hidden', aspectRatio: '3/4', border: '2px solid var(--pink)' }}>
                             <img
-                                src={currentPerson.realPhotoUrl}
-                                alt="Real"
+                                src={currentPerson.caricatureUrl2}
+                                alt="Caricature 2"
                                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                             />
                         </div>
@@ -379,7 +423,7 @@ export default function PlayerPage() {
                         borderRadius: 14,
                         border: '1px solid var(--border-color)',
                     }}>
-                        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Your Score</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>{t.yourScore}</p>
                         <p className="text-gradient" style={{
                             fontFamily: 'Outfit',
                             fontSize: 32,

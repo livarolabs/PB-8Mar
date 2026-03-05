@@ -3,6 +3,7 @@ import { ref as dbRef, set, get, child, update, remove, onValue, off } from 'fir
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { Quiz, Person, Round, Player, Vote } from './types';
+import { Language } from './translations';
 import { v4 as uuidv4 } from 'uuid';
 
 // --- Auth API ---
@@ -101,7 +102,8 @@ export async function createQuiz(title: string, ownerId: string): Promise<string
     return id;
 }
 
-export async function addPerson(quizId: string, name: string, caricatureUrl: string, realPhotoUrl: string) {
+export async function addPerson(quizId: string, name: string, caricatureUrl1: string, caricatureUrl2: string) {
+    const id = uuidv4();
     const quizRef = dbRef(db, `quizzes/${quizId}`);
     const quizSnapshot = await get(quizRef);
     if (!quizSnapshot.exists()) return;
@@ -109,16 +111,20 @@ export async function addPerson(quizId: string, name: string, caricatureUrl: str
     const quiz = quizSnapshot.val();
     const persons = quiz.persons ? Object.values(quiz.persons) : [];
 
-    const id = uuidv4();
     const person: Person = {
         id,
         name,
-        caricatureUrl,
-        realPhotoUrl,
+        caricatureUrl1,
+        caricatureUrl2,
         orderIndex: persons.length
     };
 
     await set(child(quizRef, `persons/${id}`), person);
+}
+
+export async function updatePerson(quizId: string, personId: string, updates: Partial<Person>) {
+    const personRef = dbRef(db, `quizzes/${quizId}/persons/${personId}`);
+    await update(personRef, updates);
 }
 
 export async function removePerson(quizId: string, personId: string) {
@@ -278,7 +284,7 @@ export async function resetQuiz(quizId: string) {
 }
 
 // Player API
-export async function joinQuiz(displayName: string, quizId: string): Promise<Player | null> {
+export async function joinQuiz(displayName: string, quizId: string, language: Language = 'en'): Promise<Player | null> {
     const quizRef = dbRef(db, `quizzes/${quizId}`);
     const qs = await get(quizRef);
     if (!qs.exists()) return null;
@@ -295,7 +301,9 @@ export async function joinQuiz(displayName: string, quizId: string): Promise<Pla
     const player: Player = {
         id,
         displayName,
-        score: 0
+        score: 0,
+        joinedAt: Date.now(),
+        language,
     };
 
     await set(child(quizRef, `players/${id}`), player);

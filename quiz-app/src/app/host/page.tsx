@@ -349,7 +349,7 @@ function HostDashboard() {
                 </h2>
 
                 <div className="host-caricature">
-                    <img src={currentPerson.caricatureUrl} alt="Caricature" />
+                    <img src={currentPerson.caricatureUrl1} alt="Caricature 1" />
                 </div>
 
                 <div style={{ marginTop: 32 }}>
@@ -426,13 +426,13 @@ function HostDashboard() {
                 <div className="host-reveal-grid">
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                         <div className="host-caricature">
-                            <img src={currentPerson.caricatureUrl} alt="Caricature" />
+                            <img src={currentPerson.caricatureUrl1} alt="Caricature 1" />
                         </div>
-                        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Caricature</p>
+                        <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Caricature (Voting)</p>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-                        <div className="host-real-photo">
-                            <img src={currentPerson.realPhotoUrl} alt="Real" />
+                        <div className="host-caricature" style={{ border: '3px solid var(--pink)' }}>
+                            <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
                         </div>
                         <h2 className="host-reveal-name">{currentPerson.name}</h2>
                     </div>

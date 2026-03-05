@@ -18,14 +18,14 @@ function AdminDashboard() {
     const [baseUrl, setBaseUrl] = useState('');
     const [newQuizTitle, setNewQuizTitle] = useState('New Quiz 💐');
     const [personName, setPersonName] = useState('');
-    const [caricatureUrl, setCaricatureUrl] = useState('');
-    const [realPhotoUrl, setRealPhotoUrl] = useState('');
-    const [uploading, setUploading] = useState<'caricature' | 'real' | null>(null);
+    const [caricatureUrl1, setCaricatureUrl1] = useState('');
+    const [caricatureUrl2, setCaricatureUrl2] = useState('');
+    const [uploading, setUploading] = useState<'c1' | 'c2' | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const caricatureInputRef = useRef<HTMLInputElement>(null);
-    const realPhotoInputRef = useRef<HTMLInputElement>(null);
+    const c1InputRef = useRef<HTMLInputElement>(null);
+    const c2InputRef = useRef<HTMLInputElement>(null);
 
     // Auth Listener
     useEffect(() => {
@@ -99,14 +99,14 @@ function AdminDashboard() {
         }
     }, [newQuizTitle, router, user]);
 
-    const handleUpload = useCallback(async (file: File, type: 'caricature' | 'real') => {
+    const handleUpload = useCallback(async (file: File, type: 'c1' | 'c2') => {
         setUploading(type);
         try {
             const url = await uploadImage(file);
-            if (type === 'caricature') {
-                setCaricatureUrl(url);
+            if (type === 'c1') {
+                setCaricatureUrl1(url);
             } else {
-                setRealPhotoUrl(url);
+                setCaricatureUrl2(url);
             }
         } catch (err: any) {
             showError(`Upload failed: ${err.message}`);
@@ -116,18 +116,18 @@ function AdminDashboard() {
     }, []);
 
     const handleAddPerson = useCallback(async () => {
-        if (!quizId || !personName.trim() || !caricatureUrl || !realPhotoUrl) return;
+        if (!quizId || !personName.trim() || !caricatureUrl1 || !caricatureUrl2) return;
         try {
-            await addPerson(quizId, personName.trim(), caricatureUrl, realPhotoUrl);
+            await addPerson(quizId, personName.trim(), caricatureUrl1, caricatureUrl2);
             setPersonName('');
-            setCaricatureUrl('');
-            setRealPhotoUrl('');
-            if (caricatureInputRef.current) caricatureInputRef.current.value = '';
-            if (realPhotoInputRef.current) realPhotoInputRef.current.value = '';
+            setCaricatureUrl1('');
+            setCaricatureUrl2('');
+            if (c1InputRef.current) c1InputRef.current.value = '';
+            if (c2InputRef.current) c2InputRef.current.value = '';
         } catch (err: any) {
             showError(`Failed to add person: ${err.message}`);
         }
-    }, [quizId, personName, caricatureUrl, realPhotoUrl]);
+    }, [quizId, personName, caricatureUrl1, caricatureUrl2]);
 
     const handleRemovePerson = useCallback(async (personId: string) => {
         if (!quizId) return;
@@ -433,19 +433,19 @@ function AdminDashboard() {
                                 style={{ marginBottom: 16 }}
                             />
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                                {/* Caricature Upload */}
+                                {/* Caricature 1 Upload */}
                                 <div>
                                     <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                        Caricature
+                                        Caricature 1 (Voting)
                                     </label>
                                     <div
-                                        className={`upload-zone ${caricatureUrl ? 'has-image' : ''}`}
-                                        onClick={() => caricatureInputRef.current?.click()}
+                                        className={`upload-zone ${caricatureUrl1 ? 'has-image' : ''}`}
+                                        onClick={() => c1InputRef.current?.click()}
                                         style={{ aspectRatio: '3/4' }}
                                     >
-                                        {caricatureUrl ? (
-                                            <img src={caricatureUrl} alt="Caricature" />
-                                        ) : uploading === 'caricature' ? (
+                                        {caricatureUrl1 ? (
+                                            <img src={caricatureUrl1} alt="Caricature 1" />
+                                        ) : uploading === 'c1' ? (
                                             <div className="waiting-dots"><span></span><span></span><span></span></div>
                                         ) : (
                                             <>
@@ -455,46 +455,46 @@ function AdminDashboard() {
                                         )}
                                     </div>
                                     <input
-                                        ref={caricatureInputRef}
+                                        ref={c1InputRef}
                                         type="file"
                                         accept="image/*"
                                         style={{ display: 'none' }}
                                         onChange={e => {
                                             const file = e.target.files?.[0];
-                                            if (file) handleUpload(file, 'caricature');
+                                            if (file) handleUpload(file, 'c1');
                                         }}
                                     />
                                 </div>
 
-                                {/* Real Photo Upload */}
+                                {/* Caricature 2 Upload */}
                                 <div>
                                     <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                        Real Photo
+                                        Caricature 2 (Reveal)
                                     </label>
                                     <div
-                                        className={`upload-zone ${realPhotoUrl ? 'has-image' : ''}`}
-                                        onClick={() => realPhotoInputRef.current?.click()}
+                                        className={`upload-zone ${caricatureUrl2 ? 'has-image' : ''}`}
+                                        onClick={() => c2InputRef.current?.click()}
                                         style={{ aspectRatio: '3/4' }}
                                     >
-                                        {realPhotoUrl ? (
-                                            <img src={realPhotoUrl} alt="Real Photo" />
-                                        ) : uploading === 'real' ? (
+                                        {caricatureUrl2 ? (
+                                            <img src={caricatureUrl2} alt="Caricature 2" />
+                                        ) : uploading === 'c2' ? (
                                             <div className="waiting-dots"><span></span><span></span><span></span></div>
                                         ) : (
                                             <>
-                                                <span className="upload-icon">📷</span>
+                                                <span className="upload-icon">✨</span>
                                                 <span className="upload-text">Drop or click</span>
                                             </>
                                         )}
                                     </div>
                                     <input
-                                        ref={realPhotoInputRef}
+                                        ref={c2InputRef}
                                         type="file"
                                         accept="image/*"
                                         style={{ display: 'none' }}
                                         onChange={e => {
                                             const file = e.target.files?.[0];
-                                            if (file) handleUpload(file, 'real');
+                                            if (file) handleUpload(file, 'c2');
                                         }}
                                     />
                                 </div>
@@ -503,7 +503,7 @@ function AdminDashboard() {
                                 className="btn btn-primary"
                                 style={{ width: '100%' }}
                                 onClick={handleAddPerson}
-                                disabled={!personName.trim() || !caricatureUrl || !realPhotoUrl}
+                                disabled={!personName.trim() || !caricatureUrl1 || !caricatureUrl2}
                             >
                                 ➕ Add Person
                             </button>
@@ -530,18 +530,14 @@ function AdminDashboard() {
                                                     ✕
                                                 </button>
                                             </div>
-                                            <div className="person-card-images">
-                                                <div>
-                                                    <div className="person-card-image">
-                                                        <img src={person.caricatureUrl} alt="Caricature" />
-                                                    </div>
-                                                    <p className="person-card-image-label">Caricature</p>
+                                            <div className="admin-person-preview" style={{ padding: '0 16px 16px' }}>
+                                                <div className="admin-thumb-pair">
+                                                    <img src={person.caricatureUrl1} alt="C1" title="Caricature 1" />
+                                                    <img src={person.caricatureUrl2} alt="C2" title="Caricature 2" />
                                                 </div>
-                                                <div>
-                                                    <div className="person-card-image">
-                                                        <img src={person.realPhotoUrl} alt="Real" />
-                                                    </div>
-                                                    <p className="person-card-image-label">Real Photo</p>
+                                                <div style={{ flex: 1 }}>
+                                                    <h4 style={{ fontWeight: 600, color: 'var(--gold)' }}>{person.name}</h4>
+                                                    <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Round {index + 1}</p>
                                                 </div>
                                             </div>
                                         </div>
