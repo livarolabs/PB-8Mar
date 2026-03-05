@@ -1,10 +1,29 @@
 import { db, storage, auth, googleProvider } from './firebase';
-import { ref as dbRef, set, get, child, update, remove, onValue, off } from 'firebase/database';
+import { ref as dbRef, set, get, child, update, remove, onValue, off, DatabaseReference, DataSnapshot } from 'firebase/database';
 import { ref as storageRef, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { signInWithPopup, signOut, onAuthStateChanged, User } from 'firebase/auth';
 import { Quiz, Person, Round, Player, Vote } from './types';
 import { Language } from './translations';
 import { v4 as uuidv4 } from 'uuid';
+
+// Helper: reliable single-read that works on mobile Safari
+// Firebase get() can hang on mobile browsers; onValue with onlyOnce is more reliable
+function getOnce(ref: DatabaseReference, timeoutMs = 8000): Promise<DataSnapshot> {
+    return new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+            off(ref);
+            reject(new Error('Firebase read timed out'));
+        }, timeoutMs);
+
+        onValue(ref, (snapshot) => {
+            clearTimeout(timer);
+            resolve(snapshot);
+        }, (error) => {
+            clearTimeout(timer);
+            reject(error);
+        }, { onlyOnce: true });
+    });
+}
 
 // --- Auth API ---
 
@@ -304,7 +323,7 @@ export async function joinQuiz(displayName: string, quizId: string, language: La
     const quizRef = dbRef(db, `quizzes/${quizId}`);
     try {
         console.log('[joinQuiz] Fetching quiz data...');
-        const qs = await get(quizRef);
+        const qs = await getOnce(quizRef);
         console.log('[joinQuiz] Got quiz snapshot, exists:', qs.exists());
         if (!qs.exists()) {
             console.error('[joinQuiz] quiz not found', quizId);
@@ -367,7 +386,7 @@ export async function joinQuiz(displayName: string, quizId: string, language: La
 
 export async function submitVote(quizId: string, playerId: string, guessedPersonId: string) {
     const quizRef = dbRef(db, `quizzes/${quizId}`);
-    const qs = await get(quizRef);
+    const qs = await getOnce(quizRef);
     if (!qs.exists()) return;
 
     const quiz = qs.val();
