@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { getSocket } from '@/lib/socket-client';
+import { subscribeToQuiz, startRound, revealRound, nextRound, finishQuiz, resetQuiz } from '@/lib/db';
 import { Quiz, Person } from '@/lib/types';
 import Countdown from '@/components/Countdown';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
@@ -45,25 +45,16 @@ function Confetti() {
 
 export default function HostPage() {
     const [quiz, setQuiz] = useState<Quiz | null>(null);
-    const [serverInfo, setServerInfo] = useState<{ localIP: string; port: number } | null>(null);
+    const [baseUrl, setBaseUrl] = useState('');
     const [showConfetti, setShowConfetti] = useState(false);
     const [votingEnded, setVotingEnded] = useState(false);
 
     useEffect(() => {
-        const socket = getSocket();
-
-        socket.on('quiz:state', (q: Quiz | null) => {
+        setBaseUrl(window.location.origin);
+        const unsubscribe = subscribeToQuiz((q) => {
             setQuiz(q);
         });
-
-        socket.on('server:info', (info: { localIP: string; port: number }) => {
-            setServerInfo(info);
-        });
-
-        return () => {
-            socket.off('quiz:state');
-            socket.off('server:info');
-        };
+        return () => unsubscribe();
     }, []);
 
     // Check if voting has ended for current round
@@ -85,35 +76,50 @@ export default function HostPage() {
         return () => clearInterval(interval);
     }, [quiz]);
 
-    const handleStartRound = useCallback(() => {
+    const handleStartRound = useCallback(async () => {
         setVotingEnded(false);
-        const socket = getSocket();
-        socket.emit('round:start');
+        try {
+            await startRound();
+        } catch (e) {
+            console.error(e);
+        }
     }, []);
 
-    const handleReveal = useCallback(() => {
+    const handleReveal = useCallback(async () => {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 4000);
-        const socket = getSocket();
-        socket.emit('round:reveal');
+        try {
+            await revealRound();
+        } catch (e) {
+            console.error(e);
+        }
     }, []);
 
-    const handleNext = useCallback(() => {
-        const socket = getSocket();
-        socket.emit('round:next');
+    const handleNext = useCallback(async () => {
+        try {
+            await nextRound();
+        } catch (e) {
+            console.error(e);
+        }
     }, []);
 
-    const handleFinish = useCallback(() => {
+    const handleFinish = useCallback(async () => {
         setShowConfetti(true);
         setTimeout(() => setShowConfetti(false), 6000);
-        const socket = getSocket();
-        socket.emit('quiz:finish');
+        try {
+            await finishQuiz();
+        } catch (e) {
+            console.error(e);
+        }
     }, []);
 
-    const handleReset = useCallback(() => {
+    const handleReset = useCallback(async () => {
         if (!confirm('Reset all rounds and scores?')) return;
-        const socket = getSocket();
-        socket.emit('quiz:reset');
+        try {
+            await resetQuiz();
+        } catch (e) {
+            console.error(e);
+        }
     }, []);
 
     if (!quiz) {
@@ -157,9 +163,7 @@ export default function HostPage() {
         ? quiz.persons.find(p => p.id === currentRound.personId)
         : null;
     const isLastRound = quiz.currentRoundIndex >= quiz.rounds.length - 1;
-    const joinUrl = serverInfo
-        ? `http://${serverInfo.localIP}:${serverInfo.port}/play/${quiz.id}`
-        : '';
+    const joinUrl = baseUrl ? `${baseUrl}/play/${quiz.id}` : '';
 
     // ── FINISHED state ──────────────────────────────────────────
     if (quiz.status === 'finished') {
@@ -265,6 +269,8 @@ export default function HostPage() {
 
     // ── VOTING state ────────────────────────────────────────────
     if (currentRound.status === 'voting' && currentPerson) {
+        const votesCount = currentRound.votes ? Object.keys(currentRound.votes).length : 0;
+
         return (
             <div className="host-screen">
                 {showConfetti && <Confetti />}
@@ -277,7 +283,7 @@ export default function HostPage() {
                         🎯 Round {quiz.currentRoundIndex + 1}/{quiz.rounds.length}
                     </div>
                     <div className="host-badge">
-                        ✅ {currentRound.votes.length} votes
+                        ✅ {votesCount} votes
                     </div>
                 </div>
 
@@ -309,7 +315,7 @@ export default function HostPage() {
                                 color: 'var(--gold)',
                                 marginBottom: 8,
                             }}>
-                                ⏰ Time&apos;s up! {currentRound.votes.length} votes received
+                                ⏰ Time&apos;s up! {votesCount} votes received
                             </p>
                         </div>
                     )}
@@ -328,8 +334,9 @@ export default function HostPage() {
 
     // ── REVEALED state ──────────────────────────────────────────
     if (currentRound.status === 'revealed' && currentPerson) {
-        const correctVotes = currentRound.votes.filter(v => v.guessedPersonId === currentPerson.id).length;
-        const totalVotes = currentRound.votes.length;
+        const votesArray = currentRound.votes ? Object.values(currentRound.votes) : [];
+        const correctVotes = votesArray.filter((v: any) => v.guessedPersonId === currentPerson.id).length;
+        const totalVotes = votesArray.length;
         const percentage = totalVotes > 0 ? Math.round((correctVotes / totalVotes) * 100) : 0;
 
         return (

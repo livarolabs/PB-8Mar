@@ -18,7 +18,7 @@ export interface Round {
   personId: string;
   status: 'pending' | 'voting' | 'revealed';
   votingEndsAt: number | null;
-  votes: Vote[];
+  votes: Record<string, Vote> | null;
 }
 
 export interface Player {
@@ -35,24 +35,4 @@ export interface Quiz {
   persons: Person[];
   rounds: Round[];
   players: Player[];
-}
-
-// Socket event payloads
-export interface ServerToClientEvents {
-  'quiz:state': (quiz: Quiz | null) => void;
-  'server:info': (info: { localIP: string; port: number }) => void;
-}
-
-export interface ClientToServerEvents {
-  'admin:create': (data: { title: string }) => void;
-  'admin:addPerson': (data: { name: string; caricatureUrl: string; realPhotoUrl: string }) => void;
-  'admin:removePerson': (data: { personId: string }) => void;
-  'admin:publish': () => void;
-  'player:join': (data: { displayName: string; quizId: string }, callback: (player: Player) => void) => void;
-  'player:vote': (data: { playerId: string; guessedPersonId: string }) => void;
-  'round:start': () => void;
-  'round:reveal': () => void;
-  'round:next': () => void;
-  'quiz:finish': () => void;
-  'quiz:reset': () => void;
 }

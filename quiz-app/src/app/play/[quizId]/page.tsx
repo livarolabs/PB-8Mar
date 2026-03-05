@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
-import { getSocket } from '@/lib/socket-client';
-import { Quiz, Player, Person } from '@/lib/types';
+import { subscribeToQuiz, joinQuiz, submitVote } from '@/lib/db';
+import { Quiz, Player } from '@/lib/types';
 import Countdown from '@/components/Countdown';
 import Leaderboard from '@/components/Leaderboard';
 
@@ -18,7 +18,6 @@ export default function PlayerPage() {
     const [votedThisRound, setVotedThisRound] = useState(false);
     const [selectedPersonId, setSelectedPersonId] = useState<string | null>(null);
     const [votingEnded, setVotingEnded] = useState(false);
-    const [connected, setConnected] = useState(true);
 
     // Restore player from localStorage
     useEffect(() => {
@@ -30,13 +29,9 @@ export default function PlayerPage() {
         }
     }, [quizId]);
 
+    // Subscribe to Firebase RTDB for quiz state
     useEffect(() => {
-        const socket = getSocket();
-
-        socket.on('connect', () => setConnected(true));
-        socket.on('disconnect', () => setConnected(false));
-
-        socket.on('quiz:state', (q: Quiz | null) => {
+        const unsubscribe = subscribeToQuiz((q: Quiz | null) => {
             setQuiz(prev => {
                 // Detect round change → reset vote state
                 if (prev && q) {
@@ -54,11 +49,7 @@ export default function PlayerPage() {
             });
         });
 
-        return () => {
-            socket.off('quiz:state');
-            socket.off('connect');
-            socket.off('disconnect');
-        };
+        return () => unsubscribe();
     }, []);
 
     // Check if current round voting has ended
@@ -90,49 +81,37 @@ export default function PlayerPage() {
         }
     }, [quiz, player, quizId]);
 
-    const handleJoin = useCallback(() => {
+    const handleJoin = useCallback(async () => {
         if (!nickname.trim()) return;
         setJoining(true);
-        const socket = getSocket();
-        socket.emit('player:join', { displayName: nickname.trim(), quizId }, (p: Player) => {
-            setPlayer(p);
-            localStorage.setItem(`player_${quizId}`, JSON.stringify(p));
+        try {
+            const newPlayer = await joinQuiz(nickname.trim(), quizId);
+            setPlayer(newPlayer);
+            localStorage.setItem(`player_${quizId}`, JSON.stringify(newPlayer));
+        } catch (e) {
+            console.error("Failed to join:", e);
+        } finally {
             setJoining(false);
-        });
+        }
     }, [nickname, quizId]);
 
-    const handleVote = useCallback((personId: string) => {
+    const handleVote = useCallback(async (personId: string) => {
         if (!player || votedThisRound || votingEnded) return;
         setSelectedPersonId(personId);
         setVotedThisRound(true);
-        const socket = getSocket();
-        socket.emit('player:vote', { playerId: player.id, guessedPersonId: personId });
+        try {
+            await submitVote(player.id, personId);
+        } catch (e) {
+            console.error("Failed to vote:", e);
+            setVotedThisRound(false);
+            setSelectedPersonId(null);
+        }
     }, [player, votedThisRound, votingEnded]);
-
-    // Reconnection banner
-    const ConnectionBanner = () => !connected ? (
-        <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            padding: '10px',
-            background: 'rgba(239, 68, 68, 0.9)',
-            color: 'white',
-            textAlign: 'center',
-            fontSize: 13,
-            fontWeight: 600,
-            zIndex: 1000,
-        }}>
-            ⚡ Reconnecting...
-        </div>
-    ) : null;
 
     // ── JOIN screen ─────────────────────────────────────────────
     if (!player) {
         return (
             <div className="player-screen">
-                <ConnectionBanner />
                 <div className="player-join animate-in">
                     <div style={{ marginBottom: 8 }}>
                         <span style={{ fontSize: 48 }}>💐</span>
@@ -169,7 +148,6 @@ export default function PlayerPage() {
     if (!quiz || quiz.status === 'draft') {
         return (
             <div className="player-screen">
-                <ConnectionBanner />
                 <div className="waiting-state">
                     <span style={{ fontSize: 48 }}>⏳</span>
                     <h2 style={{ fontFamily: 'Outfit', fontSize: 22, fontWeight: 700 }}>
@@ -195,7 +173,6 @@ export default function PlayerPage() {
     if (quiz.status === 'finished') {
         return (
             <div className="player-screen">
-                <ConnectionBanner />
                 <div className="animate-in" style={{ paddingTop: 20 }}>
                     <div style={{ textAlign: 'center', marginBottom: 24 }}>
                         <span style={{ fontSize: 48 }}>🎉</span>
@@ -225,7 +202,6 @@ export default function PlayerPage() {
     if (!currentRound || currentRound.status === 'pending') {
         return (
             <div className="player-screen">
-                <ConnectionBanner />
                 <div className="waiting-state">
                     <span style={{ fontSize: 48 }}>🎯</span>
                     <h2 style={{ fontFamily: 'Outfit', fontSize: 20, fontWeight: 700 }}>
@@ -261,7 +237,6 @@ export default function PlayerPage() {
 
         return (
             <div className="player-screen">
-                <ConnectionBanner />
                 <div className="animate-in">
                     <div className="player-header">
                         <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
@@ -328,13 +303,17 @@ export default function PlayerPage() {
 
     // ── REVEALED state ──────────────────────────────────────────
     if (currentRound.status === 'revealed' && currentPerson) {
-        const myVote = currentRound.votes.find(v => v.playerId === player.id);
+        // Find player's vote
+        const myVoteId = Object.keys(currentRound.votes || {}).find(
+            key => currentRound.votes?.[key]?.playerId === player.id
+        );
+        const myVote = myVoteId && currentRound.votes ? currentRound.votes[myVoteId] : null;
+
         const isCorrect = myVote?.guessedPersonId === currentPerson.id;
         const didVote = !!myVote;
 
         return (
             <div className="player-screen">
-                <ConnectionBanner />
                 <div className="animate-in">
                     <div className="player-header">
                         <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
@@ -412,7 +391,6 @@ export default function PlayerPage() {
     // Fallback
     return (
         <div className="player-screen">
-            <ConnectionBanner />
             <div className="waiting-state">
                 <div className="waiting-dots">
                     <span></span><span></span><span></span>

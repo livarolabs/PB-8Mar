@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { getSocket } from '@/lib/socket-client';
+import { subscribeToQuiz, createQuiz, addPerson, removePerson, publishQuiz, deleteQuiz, uploadImage } from '@/lib/db';
 import { Quiz } from '@/lib/types';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 
 export default function AdminPage() {
     const [quiz, setQuiz] = useState<Quiz | null>(null);
-    const [serverInfo, setServerInfo] = useState<{ localIP: string; port: number } | null>(null);
+    const [baseUrl, setBaseUrl] = useState('');
     const [quizTitle, setQuizTitle] = useState('Women\'s Day 2026 💐');
     const [personName, setPersonName] = useState('');
     const [caricatureUrl, setCaricatureUrl] = useState('');
@@ -18,99 +18,95 @@ export default function AdminPage() {
     const realPhotoInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        const socket = getSocket();
-
-        socket.on('quiz:state', (q: Quiz | null) => {
+        setBaseUrl(window.location.origin);
+        const unsubscribe = subscribeToQuiz((q) => {
             setQuiz(q);
         });
-
-        socket.on('server:info', (info: { localIP: string; port: number }) => {
-            setServerInfo(info);
-        });
-
-        socket.on('error', (err: { message: string }) => {
-            setError(err.message);
-            setTimeout(() => setError(null), 4000);
-        });
-
-        return () => {
-            socket.off('quiz:state');
-            socket.off('server:info');
-            socket.off('error');
-        };
+        return () => unsubscribe();
     }, []);
 
-    const handleCreateQuiz = useCallback(() => {
+    const showError = (msg: string) => {
+        setError(msg);
+        setTimeout(() => setError(null), 4000);
+    };
+
+    const handleCreateQuiz = useCallback(async () => {
         if (!quizTitle.trim()) return;
-        const socket = getSocket();
-        socket.emit('admin:create', { title: quizTitle.trim() });
+        try {
+            await createQuiz(quizTitle.trim());
+        } catch (err: any) {
+            showError(`Failed to create quiz: ${err.message}`);
+        }
     }, [quizTitle]);
 
     const handleUpload = useCallback(async (file: File, type: 'caricature' | 'real') => {
         setUploading(type);
         try {
-            const formData = new FormData();
-            formData.append('file', file);
-            const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
-
+            const url = await uploadImage(file);
             if (type === 'caricature') {
-                setCaricatureUrl(data.url);
+                setCaricatureUrl(url);
             } else {
-                setRealPhotoUrl(data.url);
+                setRealPhotoUrl(url);
             }
         } catch (err: any) {
-            setError(`Upload failed: ${err.message}`);
+            showError(`Upload failed: ${err.message}`);
         } finally {
             setUploading(null);
         }
     }, []);
 
-    const handleAddPerson = useCallback(() => {
+    const handleAddPerson = useCallback(async () => {
         if (!personName.trim() || !caricatureUrl || !realPhotoUrl) return;
-        const socket = getSocket();
-        socket.emit('admin:addPerson', {
-            name: personName.trim(),
-            caricatureUrl,
-            realPhotoUrl,
-        });
-        setPersonName('');
-        setCaricatureUrl('');
-        setRealPhotoUrl('');
-        if (caricatureInputRef.current) caricatureInputRef.current.value = '';
-        if (realPhotoInputRef.current) realPhotoInputRef.current.value = '';
+        try {
+            await addPerson(personName.trim(), caricatureUrl, realPhotoUrl);
+            setPersonName('');
+            setCaricatureUrl('');
+            setRealPhotoUrl('');
+            if (caricatureInputRef.current) caricatureInputRef.current.value = '';
+            if (realPhotoInputRef.current) realPhotoInputRef.current.value = '';
+        } catch (err: any) {
+            showError(`Failed to add person: ${err.message}`);
+        }
     }, [personName, caricatureUrl, realPhotoUrl]);
 
-    const handleRemovePerson = useCallback((personId: string) => {
-        const socket = getSocket();
-        socket.emit('admin:removePerson', { personId });
+    const handleRemovePerson = useCallback(async (personId: string) => {
+        try {
+            await removePerson(personId);
+        } catch (err: any) {
+            showError(`Failed to remove person: ${err.message}`);
+        }
     }, []);
 
-    const handlePublish = useCallback(() => {
-        const socket = getSocket();
-        socket.emit('admin:publish');
+    const handlePublish = useCallback(async () => {
+        try {
+            await publishQuiz();
+        } catch (err: any) {
+            showError(`Failed to publish: ${err.message}`);
+        }
     }, []);
 
-    const handleDeleteQuiz = useCallback(() => {
+    const handleDeleteQuiz = useCallback(async () => {
         if (!confirm('Delete this quiz and start over?')) return;
-        const socket = getSocket();
-        socket.emit('admin:delete');
+        try {
+            await deleteQuiz();
+        } catch (err: any) {
+            showError(`Failed to delete quiz: ${err.message}`);
+        }
     }, []);
 
-    const joinUrl = quiz && serverInfo
-        ? `http://${serverInfo.localIP}:${serverInfo.port}/play/${quiz.id}`
+    const joinUrl = quiz && baseUrl
+        ? `${baseUrl}/play/${quiz.id}`
         : '';
 
-    const hostUrl = serverInfo
-        ? `http://${serverInfo.localIP}:${serverInfo.port}/host`
+    const hostUrl = baseUrl
+        ? `${baseUrl}/host`
         : '';
 
     return (
         <div className="page-container">
             <div className="animate-in">
                 <h1 className="page-title">👑 Quiz Admin</h1>
-                <p className="page-subtitle">Set up your Women&apos;s Day &quot;Guess Who&quot; quiz</p>
+                <p className="page-subtitle">Set up your Women&apos;s Day &quot;Guess Who&quot; quiz (Firebase Sync)</p>
 
                 {error && (
                     <div style={{
@@ -326,7 +322,7 @@ export default function AdminPage() {
                                 <QRCodeDisplay url={joinUrl} size={220} label="Scan to Join" />
                             )}
                             <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-                                <a href="/host" target="_blank" className="btn btn-primary btn-large">
+                                <a href={hostUrl} target="_blank" className="btn btn-primary btn-large">
                                     🖥️ Open Host Screen
                                 </a>
                                 <button
