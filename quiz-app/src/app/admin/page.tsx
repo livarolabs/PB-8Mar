@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { subscribeToQuiz, createQuiz, addPerson, removePerson, publishQuiz, deleteQuiz, uploadImage, listQuizzes, onAuthChange, loginWithGoogle, logout } from '@/lib/db';
 import { Quiz } from '@/lib/types';
 import { User } from 'firebase/auth';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 
-export default function AdminPage() {
+function AdminDashboard() {
     const searchParams = useSearchParams();
     const router = useRouter();
     const quizId = searchParams.get('quizId');
@@ -518,5 +518,17 @@ export default function AdminPage() {
                 )}
             </div>
         </div>
+    );
+}
+
+export default function AdminPage() {
+    return (
+        <Suspense fallback={
+            <div className="page-container">
+                <div className="waiting-dots"><span></span><span></span><span></span></div>
+            </div>
+        }>
+            <AdminDashboard />
+        </Suspense>
     );
 }
