@@ -301,28 +301,59 @@ export async function resetQuiz(quizId: string) {
 // Player API
 export async function joinQuiz(displayName: string, quizId: string, language: Language = 'en'): Promise<Player | null> {
     const quizRef = dbRef(db, `quizzes/${quizId}`);
-    const qs = await get(quizRef);
-    if (!qs.exists()) return null;
+    try {
+        const qs = await get(quizRef);
+        if (!qs.exists()) {
+            console.error('joinQuiz: quiz not found', quizId);
+            return null;
+        }
 
-    const quiz = qs.val();
+        const quiz = qs.val();
 
-    // Check if player exists
-    if (quiz.players) {
-        const existing = Object.values(quiz.players).find((p: any) => p.displayName.toLowerCase() === displayName.toLowerCase());
-        if (existing) return existing as Player;
+        // Check if player already exists
+        if (quiz.players) {
+            const existingEntry = Object.entries(quiz.players).find(
+                ([, p]: [string, any]) => p.displayName?.toLowerCase() === displayName.toLowerCase()
+            );
+            if (existingEntry) {
+                const [existingId, existingData] = existingEntry as [string, any];
+                // Update language if changed, and backfill missing fields
+                const updates: Record<string, any> = {};
+                if (existingData.language !== language) updates.language = language;
+                if (existingData.isReady === undefined) updates.isReady = false;
+                if (existingData.isTutorialFinished === undefined) updates.isTutorialFinished = false;
+
+                if (Object.keys(updates).length > 0) {
+                    await update(child(quizRef, `players/${existingId}`), updates);
+                }
+
+                return {
+                    ...existingData,
+                    id: existingId,
+                    language,
+                    isReady: existingData.isReady ?? false,
+                    isTutorialFinished: existingData.isTutorialFinished ?? false,
+                } as Player;
+            }
+        }
+
+        const id = uuidv4();
+        const player: Player = {
+            id,
+            displayName,
+            score: 0,
+            joinedAt: Date.now(),
+            language,
+            isReady: false,
+            isTutorialFinished: false,
+        };
+
+        await set(child(quizRef, `players/${id}`), player);
+        return player;
+    } catch (error) {
+        console.error('joinQuiz error:', error);
+        throw error;
     }
-
-    const id = uuidv4();
-    const player: Player = {
-        id,
-        displayName,
-        score: 0,
-        joinedAt: Date.now(),
-        language,
-    };
-
-    await set(child(quizRef, `players/${id}`), player);
-    return player;
 }
 
 export async function submitVote(quizId: string, playerId: string, guessedPersonId: string) {
