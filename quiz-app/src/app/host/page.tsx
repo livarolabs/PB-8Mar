@@ -476,6 +476,7 @@ function HostDashboard() {
                             {!votingEnded && currentRound.votingEndsAt && (
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
                                     <Countdown
+                                        key={currentRound.votingEndsAt}
                                         endsAt={currentRound.votingEndsAt}
                                         onComplete={() => setVotingEnded(true)}
                                     />

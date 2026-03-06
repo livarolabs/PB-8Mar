@@ -517,7 +517,7 @@ export default function PlayerPage() {
                     {!votedThisRound && !votingEnded && currentRound.votingEndsAt && (
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
                             <div style={{ transform: 'scale(0.6)' }}>
-                                <Countdown endsAt={currentRound.votingEndsAt} onComplete={() => setVotingEnded(true)} />
+                                <Countdown key={currentRound.votingEndsAt} endsAt={currentRound.votingEndsAt} onComplete={() => setVotingEnded(true)} />
                             </div>
                         </div>
                     )}
