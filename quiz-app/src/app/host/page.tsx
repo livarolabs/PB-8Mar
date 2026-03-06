@@ -63,20 +63,29 @@ function HostDashboard() {
         return () => unsubscribe();
     }, [quizId]);
 
-    // Preload all caricature images to eliminate latency during round/phase changes
+    // Preload only current and next round's caricature images to prevent network saturation
     useEffect(() => {
-        if (!quiz || !quiz.persons) return;
-        quiz.persons.forEach(person => {
-            if (person.caricatureUrl1) {
-                const img = new Image();
-                img.src = person.caricatureUrl1;
+        if (!quiz || !quiz.rounds || !quiz.persons) return;
+
+        const preloadPersonImages = (personId: string | undefined) => {
+            if (!personId) return;
+            const person = quiz.persons.find(p => p.id === personId);
+            if (person) {
+                if (person.caricatureUrl1) {
+                    const img = new Image();
+                    img.src = person.caricatureUrl1;
+                }
+                if (person.caricatureUrl2) {
+                    const img = new Image();
+                    img.src = person.caricatureUrl2;
+                }
             }
-            if (person.caricatureUrl2) {
-                const img = new Image();
-                img.src = person.caricatureUrl2;
-            }
-        });
-    }, [quiz?.persons]);
+        };
+
+        const currentIndex = quiz.currentRoundIndex || 0;
+        preloadPersonImages(quiz.rounds[currentIndex]?.personId);
+        preloadPersonImages(quiz.rounds[currentIndex + 1]?.personId);
+    }, [quiz?.rounds, quiz?.currentRoundIndex, quiz?.persons]);
 
     // Check if voting has ended for current round
     useEffect(() => {
