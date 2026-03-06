@@ -40,6 +40,21 @@ export default function PlayerPage() {
         setShuffledPersonNames([...quiz.persons].sort(() => Math.random() - 0.5));
     }, [quiz?.id, quiz?.currentRoundIndex]);
 
+    // Preload all caricature images to eliminate latency during round/phase changes
+    useEffect(() => {
+        if (!quiz || !quiz.persons) return;
+        quiz.persons.forEach(person => {
+            if (person.caricatureUrl1) {
+                const img = new Image();
+                img.src = person.caricatureUrl1;
+            }
+            if (person.caricatureUrl2) {
+                const img = new Image();
+                img.src = person.caricatureUrl2;
+            }
+        });
+    }, [quiz?.persons]);
+
     // Restore player from localStorage
     useEffect(() => {
         const saved = localStorage.getItem(`player_${quizId}`);
@@ -315,8 +330,8 @@ export default function PlayerPage() {
                         {tutorialStep === 7 && (
                             <div className="animate-in">
                                 <p style={{ fontSize: 14, marginBottom: 16, color: 'var(--text-secondary)' }}>{t.tutorialStep7}</p>
-                                <div className="player-caricature" style={{ marginBottom: 16, maxWidth: 140, margin: '0 auto 16px' }}>
-                                    <img src="/Kostya.png" alt="Demo" style={{ borderRadius: 12, width: '100%', height: 'auto', objectFit: 'cover' }} />
+                                <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
+                                    <img src="/Kostya.png" alt="Demo" style={{ borderRadius: '50%', width: 140, height: 140, objectFit: 'cover', border: '4px solid var(--gold)', boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }} />
                                 </div>
                                 <div className="player-options" style={{ gridTemplateColumns: '1fr 1fr' }}>
                                     <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 12 }} onClick={() => handleDemoVote(true)}>{t.tutorialDemoOptionA}</button>

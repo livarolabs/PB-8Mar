@@ -63,6 +63,21 @@ function HostDashboard() {
         return () => unsubscribe();
     }, [quizId]);
 
+    // Preload all caricature images to eliminate latency during round/phase changes
+    useEffect(() => {
+        if (!quiz || !quiz.persons) return;
+        quiz.persons.forEach(person => {
+            if (person.caricatureUrl1) {
+                const img = new Image();
+                img.src = person.caricatureUrl1;
+            }
+            if (person.caricatureUrl2) {
+                const img = new Image();
+                img.src = person.caricatureUrl2;
+            }
+        });
+    }, [quiz?.persons]);
+
     // Check if voting has ended for current round
     useEffect(() => {
         if (!quiz) return;
