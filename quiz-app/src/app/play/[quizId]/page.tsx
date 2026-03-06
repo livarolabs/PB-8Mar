@@ -416,7 +416,7 @@ export default function PlayerPage() {
         return (
             <div className="player-screen">
                 <div className="animate-in" style={{ paddingTop: 20 }}>
-                    <div style={{ textAlign: 'center', marginBottom: 24 }}>
+                    <div style={{ textAlign: 'center', marginBottom: 24, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <div className="winner-celebration animate-bounce" style={{ marginBottom: 16 }}>
                             <img
                                 src="/positive_kostya.png"
