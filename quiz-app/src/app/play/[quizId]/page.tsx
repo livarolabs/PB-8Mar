@@ -288,25 +288,25 @@ export default function PlayerPage() {
                         )}
                         {tutorialStep === 3 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>📝</span>
+                                <span style={{ fontSize: 64 }}>🎨</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep4}</p>
                             </div>
                         )}
                         {tutorialStep === 4 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🎨</span>
+                                <span style={{ fontSize: 64 }}>✨</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep5}</p>
                             </div>
                         )}
                         {tutorialStep === 5 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>✨</span>
+                                <span style={{ fontSize: 64 }}>🏆</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep6}</p>
                             </div>
                         )}
                         {tutorialStep === 6 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🏆</span>
+                                <span style={{ fontSize: 64 }}>🎮</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep7}</p>
                             </div>
                         )}
@@ -314,7 +314,7 @@ export default function PlayerPage() {
                             <div className="animate-in">
                                 <p style={{ fontSize: 14, marginBottom: 16, color: 'var(--text-secondary)' }}>{t.tutorialStep7}</p>
                                 <div className="player-caricature" style={{ marginBottom: 16, maxWidth: 140, margin: '0 auto 16px' }}>
-                                    <img src="https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=400" alt="Demo" style={{ borderRadius: 12 }} />
+                                    <img src="/Kostya.png" alt="Demo" style={{ borderRadius: 12, width: '100%', height: 'auto', objectFit: 'cover' }} />
                                 </div>
                                 <div className="player-options" style={{ gridTemplateColumns: '1fr 1fr' }}>
                                     <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 12 }} onClick={() => handleDemoVote(true)}>{t.tutorialDemoOptionA}</button>
@@ -458,10 +458,9 @@ export default function PlayerPage() {
     }
 
     // ── VOTING state (Words / Img1 / Img2) ───────────────────────────
-    if (['voting_words', 'voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
-        const pointsText = currentRound.status === 'voting_words' ? t.votePoints3 :
-            currentRound.status === 'voting_1' ? t.votePoints2 :
-                t.votePoints1;
+    if (['voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
+        const pointsText = currentRound.status === 'voting_1' ? t.votePoints2 :
+            t.votePoints1;
 
         return (
             <div className="player-screen">
@@ -485,6 +484,8 @@ export default function PlayerPage() {
                             {pointsText}
                         </span>
                     </div>
+
+
 
                     {!votedThisRound && !votingEnded && currentRound.votingEndsAt && (
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>

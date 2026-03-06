@@ -361,23 +361,19 @@ function HostDashboard() {
     }
 
     // ── VOTING state (Words / Img1 / Img2) ───────────────────────────
-    if (['voting_words', 'voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
+    if (['voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
         const votesCount = currentRound.votes ? Object.keys(currentRound.votes).length : 0;
-        const phaseTitle = currentRound.status === 'voting_words' ? 'Who fits these words? 🤔' :
-            currentRound.status === 'voting_1' ? '1st Caricature — Still guessing! 🧐' :
-                '2nd Caricature — Last chance! ⏳';
+        const phaseTitle = currentRound.status === 'voting_1' ? '1st Caricature — Who is this? 🧐' :
+            '2nd Caricature — Last chance! ⏳';
 
-        const phasePoints = currentRound.status === 'voting_words' ? '3 points' :
-            currentRound.status === 'voting_1' ? '2 points' :
-                '1 point';
+        const phasePoints = currentRound.status === 'voting_1' ? '2 points' :
+            '1 point';
 
-        const nextButtonText = currentRound.status === 'voting_words' ? '👀 Reveal 1st Caricature' :
-            currentRound.status === 'voting_1' ? '👀 Reveal 2nd Caricature' :
-                '✨ Reveal The Name!';
+        const nextButtonText = currentRound.status === 'voting_1' ? '👀 Reveal 2nd Caricature' :
+            '✨ Reveal The Name!';
 
-        const skipButtonText = currentRound.status === 'voting_words' ? '⏭️ Skip and Reveal 1st Pic' :
-            currentRound.status === 'voting_1' ? '⏭️ Skip and Reveal 2nd Pic' :
-                '⏭️ Skip and Reveal Name';
+        const skipButtonText = currentRound.status === 'voting_1' ? '⏭️ Skip and Reveal 2nd Pic' :
+            '⏭️ Skip and Reveal Name';
 
         const isLastVotingPhase = currentRound.status === 'voting_2';
 
@@ -406,27 +402,18 @@ function HostDashboard() {
                 }}>
                     {phaseTitle}
                 </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: 16, marginBottom: 24, fontWeight: 500 }}>
-                    Guess now for <span style={{ color: 'var(--gold)' }}>{phasePoints}</span>!
-                </p>
-
-                {currentRound.status === 'voting_words' && (
-                    <div className="host-words glass-card" style={{ padding: '32px', maxWidth: '600px', margin: '0 auto 32px' }}>
-                        <p style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.5 }}>
-                            {currentPerson.words}
-                        </p>
-                    </div>
-                )}
 
                 {currentRound.status === 'voting_1' && (
                     <div className="host-caricature">
                         <img src={currentPerson.caricatureUrl1} alt="Caricature 1" />
                     </div>
-                )}
+                )
+                }
 
-                {currentRound.status === 'voting_2' && (
-                    <>
-                        <style>{`
+                {
+                    currentRound.status === 'voting_2' && (
+                        <>
+                            <style>{`
                             @keyframes zoomReveal {
                                 0% { transform: scale(0); opacity: 0; }
                                 50% { transform: scale(1.12); opacity: 1; }
@@ -444,14 +431,15 @@ function HostDashboard() {
                                 100% { border-color: var(--pink); }
                             }
                         `}</style>
-                        <div className="host-caricature" style={{
-                            border: '3px solid var(--pink)',
-                            animation: 'zoomReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowPulse 2s ease-in-out 0.7s infinite, borderShimmer 3s ease-in-out 0.7s infinite',
-                        }}>
-                            <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
-                        </div>
-                    </>
-                )}
+                            <div className="host-caricature" style={{
+                                border: '3px solid var(--pink)',
+                                animation: 'zoomReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowPulse 2s ease-in-out 0.7s infinite, borderShimmer 3s ease-in-out 0.7s infinite',
+                            }}>
+                                <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
+                            </div>
+                        </>
+                    )
+                }
 
                 <div style={{ marginTop: 32 }}>
                     {quiz.settings?.votingMode === 'all_voted' ? (
@@ -503,7 +491,7 @@ function HostDashboard() {
                         {votingEnded ? nextButtonText : skipButtonText}
                     </button>
                 </div>
-            </div>
+            </div >
         );
     }
 

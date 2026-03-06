@@ -866,3 +866,146 @@ body {
     font-size: 24px;
   }
 }
+
+/* ── Mascot Animations ────────────────────────────────────────────────── */
+.mascot-container {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 15px rgba(0, 0, 0, 0.5));
+  will-change: transform;
+}
+
+.mascot-pop-bottom {
+  bottom: -300px;
+  left: 50%;
+  transform: translateX(-50%);
+  animation: mascot-pop-bottom-anim 4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes mascot-pop-bottom-anim {
+  0% {
+    bottom: -300px;
+  }
+
+  15% {
+    bottom: 0;
+  }
+
+  45% {
+    bottom: 0;
+    transform: translateX(-50%) rotate(-10deg) scale(1.1);
+  }
+
+  55% {
+    bottom: 0;
+    transform: translateX(-50%) rotate(10deg) scale(1.1);
+  }
+
+  85% {
+    bottom: 0;
+  }
+
+  100% {
+    bottom: -300px;
+  }
+}
+
+.mascot-peek-left {
+  left: -300px;
+  top: 40%;
+  animation: mascot-peek-left-anim 4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes mascot-peek-left-anim {
+  0% {
+    left: -300px;
+    transform: rotate(20deg);
+  }
+
+  15% {
+    left: -20px;
+    transform: rotate(20deg);
+  }
+
+  45% {
+    left: -20px;
+    transform: rotate(10deg) scale(1.1);
+  }
+
+  55% {
+    left: -20px;
+    transform: rotate(30deg) scale(1.1);
+  }
+
+  85% {
+    left: -20px;
+    transform: rotate(20deg);
+  }
+
+  100% {
+    left: -300px;
+    transform: rotate(20deg);
+  }
+}
+
+.mascot-peek-right {
+  right: -300px;
+  top: 30%;
+  animation: mascot-peek-right-anim 4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+@keyframes mascot-peek-right-anim {
+  0% {
+    right: -300px;
+    transform: rotate(-20deg);
+  }
+
+  15% {
+    right: -20px;
+    transform: rotate(-20deg);
+  }
+
+  45% {
+    right: -20px;
+    transform: rotate(-10deg) scale(1.1);
+  }
+
+  55% {
+    right: -20px;
+    transform: rotate(-30deg) scale(1.1);
+  }
+
+  85% {
+    right: -20px;
+    transform: rotate(-20deg);
+  }
+
+  100% {
+    right: -300px;
+    transform: rotate(-20deg);
+  }
+}
+
+.mascot-spin-across {
+  top: 20%;
+  left: -300px;
+  animation: mascot-spin-across-anim 6s linear forwards;
+}
+
+@keyframes mascot-spin-across-anim {
+  0% {
+    left: -300px;
+    transform: rotate(0deg) scale(1);
+  }
+
+  50% {
+    left: 50vw;
+    transform: rotate(540deg) scale(1.5);
+  }
+
+  100% {
+    left: 120vw;
+    transform: rotate(1080deg) scale(1);
+  }
+}
