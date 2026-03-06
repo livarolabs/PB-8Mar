@@ -21,8 +21,9 @@ export interface Translations {
     waitingForReveal: string;
     timesUp: string;
     everyoneVoted: string;
-    correctAnswer2pts: string;
-    lastChance1pt: string;
+    votePoints3: string;
+    votePoints2: string;
+    votePoints1: string;
     waitingForHostToStart: string;
 
     // Result Screen
@@ -77,8 +78,9 @@ export const translations: Record<Language, Translations> = {
         waitingForReveal: "Waiting for reveal...",
         timesUp: "Time's up!",
         everyoneVoted: "Everyone has voted!",
-        correctAnswer2pts: "🎯 Correct answer: 2 Points",
-        lastChance1pt: "🎯 Last chance: 1 Point",
+        votePoints3: "🎯 3 Points if correct now!",
+        votePoints2: "🎯 2 Points if correct now!",
+        votePoints1: "🎯 1 Point if correct now!",
         waitingForHostToStart: "Waiting for the host to start...",
         correct: "Correct! 🎉",
         notQuite: "Not quite! 😅",
@@ -125,8 +127,9 @@ export const translations: Record<Language, Translations> = {
         waitingForReveal: "Várakozás a felfedésre...",
         timesUp: "Lejárt az idő!",
         everyoneVoted: "Mindenki szavazott!",
-        correctAnswer2pts: "🎯 Helyes válasz: 2 pont",
-        lastChance1pt: "🎯 Utolsó esély: 1 pont",
+        votePoints3: "🎯 3 pont, ha most kitalálod!",
+        votePoints2: "🎯 2 pont, ha most kitalálod!",
+        votePoints1: "🎯 1 pont, ha most kitalálod!",
         waitingForHostToStart: "Várakozás a házigazdára...",
         correct: "Helyes! 🎉",
         notQuite: "Nem egészen! 😅",
@@ -173,8 +176,9 @@ export const translations: Record<Language, Translations> = {
         waitingForReveal: "Чекаємо на розкриття...",
         timesUp: "Час вийшов!",
         everyoneVoted: "Всі проголосували!",
-        correctAnswer2pts: "🎯 Правильна відповідь: 2 бали",
-        lastChance1pt: "🎯 Останній шанс: 1 бал",
+        votePoints3: "🎯 3 бали за правильну відповідь зараз!",
+        votePoints2: "🎯 2 бали за правильну відповідь зараз!",
+        votePoints1: "🎯 1 бал за правильну відповідь зараз!",
         waitingForHostToStart: "Чекаємо на ведучого...",
         correct: "Правильно! 🎉",
         notQuite: "Не зовсім! 😅",
@@ -221,8 +225,9 @@ export const translations: Record<Language, Translations> = {
         waitingForReveal: "Ожидание раскрытия...",
         timesUp: "Время вышло!",
         everyoneVoted: "Все проголосовали!",
-        correctAnswer2pts: "🎯 Правильный ответ: 2 балла",
-        lastChance1pt: "🎯 Последний шанс: 1 балл",
+        votePoints3: "🎯 3 балла за правильный ответ сейчас!",
+        votePoints2: "🎯 2 балла за правильный ответ сейчас!",
+        votePoints1: "🎯 1 балл за правильный ответ сейчас!",
         waitingForHostToStart: "Ожидание ведущего...",
         correct: "Правильно! 🎉",
         notQuite: "Не совсем! 😅",

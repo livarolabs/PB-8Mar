@@ -65,6 +65,9 @@ export default function PlayerPage() {
                         setVotedThisRound(false);
                         setSelectedPersonId(null);
                         setVotingEnded(false);
+                    } else if (prevRound?.status !== newRound?.status) {
+                        // Reset timer overlay for phase transitions within the same round
+                        setVotingEnded(false);
                     }
                 }
                 return q;
@@ -78,7 +81,7 @@ export default function PlayerPage() {
     useEffect(() => {
         if (!quiz) return;
         const round = quiz.rounds[quiz.currentRoundIndex];
-        if (!round || round.status !== 'voting' || !round.votingEndsAt) {
+        if (!round || !['voting_words', 'voting_1', 'voting_2'].includes(round.status) || !round.votingEndsAt) {
             return;
         }
 
@@ -154,8 +157,7 @@ export default function PlayerPage() {
         if (!player || votedThisRound) return;
         // Block votes if the current phase's timer has ended
         const currentRd = quiz?.rounds[quiz.currentRoundIndex];
-        if (currentRd?.status === 'voting' && votingEnded) return;
-        if (currentRd?.status === 'revealing' && currentRd.revealingEndsAt && Date.now() > currentRd.revealingEndsAt) return;
+        if (currentRd && ['voting_words', 'voting_1', 'voting_2'].includes(currentRd.status) && votingEnded) return;
 
         setSelectedPersonId(personId);
         setVotedThisRound(true);
@@ -455,8 +457,12 @@ export default function PlayerPage() {
         );
     }
 
-    // ── VOTING state ────────────────────────────────────────────
-    if (currentRound.status === 'voting' && currentPerson) {
+    // ── VOTING state (Words / Img1 / Img2) ───────────────────────────
+    if (['voting_words', 'voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
+        const pointsText = currentRound.status === 'voting_words' ? t.votePoints3 :
+            currentRound.status === 'voting_1' ? t.votePoints2 :
+                t.votePoints1;
+
         return (
             <div className="player-screen">
                 <div className="animate-in">
@@ -476,7 +482,7 @@ export default function PlayerPage() {
 
                     <div style={{ textAlign: 'center', marginBottom: 16 }}>
                         <span className="host-badge" style={{ background: 'var(--gold)', color: '#000', fontSize: 11 }}>
-                            {t.correctAnswer2pts}
+                            {pointsText}
                         </span>
                     </div>
 
@@ -558,126 +564,6 @@ export default function PlayerPage() {
                                         fontSize: 13,
                                         fontWeight: 700,
                                         color: selectedPersonId === person.id ? '#fff' : 'var(--text-muted)',
-                                        flexShrink: 0,
-                                    }}>
-                                        {String.fromCharCode(65 + i)}
-                                    </span>
-                                    {person.name}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            </div>
-        );
-    }
-
-    // ── REVEALING state (2nd pic, no results yet) ───────────────
-    if (currentRound.status === 'revealing' && currentPerson) {
-        const revealingTimedOut = currentRound.revealingEndsAt ? Date.now() > currentRound.revealingEndsAt : false;
-
-        return (
-            <div className="player-screen">
-                <div className="animate-in">
-                    <div className="player-header">
-                        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-                            {t.round} {quiz.currentRoundIndex + 1} {t.of} {quiz.rounds.length}
-                        </p>
-                        <h2 style={{
-                            fontFamily: 'Outfit',
-                            fontSize: 20,
-                            fontWeight: 700,
-                            marginTop: 4,
-                        }}>
-                            {t.whoIsThis}
-                        </h2>
-                    </div>
-
-                    <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                        <span className="host-badge" style={{ background: 'var(--gold)', color: '#000', fontSize: 11 }}>
-                            {t.lastChance1pt}
-                        </span>
-                    </div>
-
-                    {!votedThisRound && currentRound.revealingEndsAt && (
-                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-                            <div style={{ transform: 'scale(0.6)' }}>
-                                <Countdown endsAt={currentRound.revealingEndsAt} onComplete={() => { }} />
-                            </div>
-                        </div>
-                    )}
-
-                    {votedThisRound ? (
-                        <div className="vote-locked animate-in">
-                            <p>✅ {t.voteLocked}</p>
-                            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
-                                {t.waitingForReveal}
-                            </p>
-                            <div className="waiting-dots" style={{ marginTop: 20 }}>
-                                <span></span><span></span><span></span>
-                            </div>
-                        </div>
-                    ) : revealingTimedOut ? (
-                        <div style={{
-                            textAlign: 'center',
-                            padding: '16px',
-                            background: 'rgba(236, 72, 153, 0.1)',
-                            borderRadius: 14,
-                            border: '1px solid var(--pink)',
-                        }}>
-                            <p style={{ color: 'var(--pink)', fontWeight: 700 }}>
-                                {t.timesUp}
-                            </p>
-                        </div>
-                    ) : (
-                        <div style={{
-                            maxHeight: '35vh',
-                            overflowY: 'auto',
-                            padding: '4px 0',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: 8,
-                            WebkitOverflowScrolling: 'touch',
-                        }}>
-
-                            {shuffledPersonNames.map((person: Person, i: number) => (
-                                <button
-                                    key={person.id}
-                                    onClick={() => handleVote(person.id)}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 12,
-                                        width: '100%',
-                                        padding: '14px 18px',
-                                        borderRadius: 14,
-                                        border: selectedPersonId === person.id
-                                            ? '2px solid var(--gold)'
-                                            : '2px solid rgba(255,255,255,0.1)',
-                                        background: selectedPersonId === person.id
-                                            ? 'rgba(255, 184, 0, 0.15)'
-                                            : 'rgba(255,255,255,0.05)',
-                                        color: 'var(--text-primary)',
-                                        fontSize: 15,
-                                        fontWeight: 600,
-                                        fontFamily: 'Outfit, sans-serif',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease',
-                                        textAlign: 'left',
-                                    }}
-                                >
-                                    <span style={{
-                                        width: 28, height: 28,
-                                        borderRadius: '50%',
-                                        background: selectedPersonId === person.id
-                                            ? 'var(--gold)'
-                                            : 'rgba(255,255,255,0.1)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: 13,
-                                        fontWeight: 700,
-                                        color: selectedPersonId === person.id ? '#000' : 'var(--text-muted)',
                                         flexShrink: 0,
                                     }}>
                                         {String.fromCharCode(65 + i)}

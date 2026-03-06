@@ -18,6 +18,7 @@ function AdminDashboard() {
     const [baseUrl, setBaseUrl] = useState('');
     const [newQuizTitle, setNewQuizTitle] = useState('New Quiz 💐');
     const [personName, setPersonName] = useState('');
+    const [words, setWords] = useState('');
     const [caricatureUrl1, setCaricatureUrl1] = useState('');
     const [caricatureUrl2, setCaricatureUrl2] = useState('');
     const [uploading, setUploading] = useState<'c1' | 'c2' | null>(null);
@@ -116,10 +117,11 @@ function AdminDashboard() {
     }, []);
 
     const handleAddPerson = useCallback(async () => {
-        if (!quizId || !personName.trim() || !caricatureUrl1 || !caricatureUrl2) return;
+        if (!quizId || !personName.trim() || !words.trim() || !caricatureUrl1 || !caricatureUrl2) return;
         try {
-            await addPerson(quizId, personName.trim(), caricatureUrl1, caricatureUrl2);
+            await addPerson(quizId, personName.trim(), words.trim(), caricatureUrl1, caricatureUrl2);
             setPersonName('');
+            setWords('');
             setCaricatureUrl1('');
             setCaricatureUrl2('');
             if (c1InputRef.current) c1InputRef.current.value = '';
@@ -127,7 +129,7 @@ function AdminDashboard() {
         } catch (err: any) {
             showError(`Failed to add person: ${err.message}`);
         }
-    }, [quizId, personName, caricatureUrl1, caricatureUrl2]);
+    }, [quizId, personName, words, caricatureUrl1, caricatureUrl2]);
 
     const handleRemovePerson = useCallback(async (personId: string) => {
         if (!quizId) return;
@@ -431,6 +433,13 @@ function AdminDashboard() {
                                 onChange={e => setPersonName(e.target.value)}
                                 placeholder="Name (e.g., Anna)"
                                 style={{ marginBottom: 16 }}
+                            />
+                            <textarea
+                                className="input"
+                                value={words}
+                                onChange={e => setWords(e.target.value)}
+                                placeholder="Traits, Items, Adjectives (e.g. Coffee lover, Always late, Dog person)"
+                                style={{ marginBottom: 16, minHeight: '80px', resize: 'vertical' }}
                             />
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                                 {/* Caricature 1 Upload */}

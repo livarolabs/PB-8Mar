@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { subscribeToQuiz, startRound, revealCaricature, revealName, nextRound, finishQuiz, resetQuiz } from '@/lib/db';
+import { subscribeToQuiz, startRound, advancePhase, revealName, nextRound, finishQuiz, resetQuiz } from '@/lib/db';
 import { Quiz } from '@/lib/types';
 import Countdown from '@/components/Countdown';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
@@ -52,7 +52,6 @@ function HostDashboard() {
     const [baseUrl, setBaseUrl] = useState('');
     const [showConfetti, setShowConfetti] = useState(false);
     const [votingEnded, setVotingEnded] = useState(false);
-    const [revealingEnded, setRevealingEnded] = useState(false);
 
     useEffect(() => {
         setBaseUrl(window.location.origin);
@@ -68,7 +67,7 @@ function HostDashboard() {
     useEffect(() => {
         if (!quiz) return;
         const round = quiz.rounds[quiz.currentRoundIndex];
-        if (!round || round.status !== 'voting') {
+        if (!round || !['voting_words', 'voting_1', 'voting_2'].includes(round.status)) {
             setVotingEnded(false);
             return;
         }
@@ -121,11 +120,11 @@ function HostDashboard() {
         }
     }, [quizId]);
 
-    const handleRevealCaricature = useCallback(async () => {
+    const handleAdvancePhase = useCallback(async () => {
         if (!quizId) return;
-        setRevealingEnded(false);
+        setVotingEnded(false);
         try {
-            await revealCaricature(quizId);
+            await advancePhase(quizId);
         } catch (e) {
             console.error(e);
         }
@@ -361,9 +360,26 @@ function HostDashboard() {
         );
     }
 
-    // ── VOTING state ────────────────────────────────────────────
-    if (currentRound.status === 'voting' && currentPerson) {
+    // ── VOTING state (Words / Img1 / Img2) ───────────────────────────
+    if (['voting_words', 'voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
         const votesCount = currentRound.votes ? Object.keys(currentRound.votes).length : 0;
+        const phaseTitle = currentRound.status === 'voting_words' ? 'Who fits these words? 🤔' :
+            currentRound.status === 'voting_1' ? '1st Caricature — Still guessing! 🧐' :
+                '2nd Caricature — Last chance! ⏳';
+
+        const phasePoints = currentRound.status === 'voting_words' ? '3 points' :
+            currentRound.status === 'voting_1' ? '2 points' :
+                '1 point';
+
+        const nextButtonText = currentRound.status === 'voting_words' ? '👀 Reveal 1st Caricature' :
+            currentRound.status === 'voting_1' ? '👀 Reveal 2nd Caricature' :
+                '✨ Reveal The Name!';
+
+        const skipButtonText = currentRound.status === 'voting_words' ? '⏭️ Skip and Reveal 1st Pic' :
+            currentRound.status === 'voting_1' ? '⏭️ Skip and Reveal 2nd Pic' :
+                '⏭️ Skip and Reveal Name';
+
+        const isLastVotingPhase = currentRound.status === 'voting_2';
 
         return (
             <div className="host-screen">
@@ -386,14 +402,56 @@ function HostDashboard() {
                     fontSize: 28,
                     fontWeight: 700,
                     color: 'var(--text-secondary)',
-                    marginBottom: 24,
+                    marginBottom: 8,
                 }}>
-                    Who is this? 🤔
+                    {phaseTitle}
                 </h2>
+                <p style={{ color: 'var(--text-muted)', fontSize: 16, marginBottom: 24, fontWeight: 500 }}>
+                    Guess now for <span style={{ color: 'var(--gold)' }}>{phasePoints}</span>!
+                </p>
 
-                <div className="host-caricature">
-                    <img src={currentPerson.caricatureUrl1} alt="Caricature 1" />
-                </div>
+                {currentRound.status === 'voting_words' && (
+                    <div className="host-words glass-card" style={{ padding: '32px', maxWidth: '600px', margin: '0 auto 32px' }}>
+                        <p style={{ fontSize: 28, fontWeight: 600, lineHeight: 1.5 }}>
+                            {currentPerson.words}
+                        </p>
+                    </div>
+                )}
+
+                {currentRound.status === 'voting_1' && (
+                    <div className="host-caricature">
+                        <img src={currentPerson.caricatureUrl1} alt="Caricature 1" />
+                    </div>
+                )}
+
+                {currentRound.status === 'voting_2' && (
+                    <>
+                        <style>{`
+                            @keyframes zoomReveal {
+                                0% { transform: scale(0); opacity: 0; }
+                                50% { transform: scale(1.12); opacity: 1; }
+                                70% { transform: scale(0.97); }
+                                85% { transform: scale(1.06); }
+                                100% { transform: scale(1.05); }
+                            }
+                            @keyframes glowPulse {
+                                0%, 100% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.4), 0 20px 40px rgba(0,0,0,0.3); }
+                                50% { box-shadow: 0 0 50px rgba(236, 72, 153, 0.8), 0 20px 60px rgba(0,0,0,0.4); }
+                            }
+                            @keyframes borderShimmer {
+                                0% { border-color: var(--pink); }
+                                50% { border-color: var(--gold); }
+                                100% { border-color: var(--pink); }
+                            }
+                        `}</style>
+                        <div className="host-caricature" style={{
+                            border: '3px solid var(--pink)',
+                            animation: 'zoomReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowPulse 2s ease-in-out 0.7s infinite, borderShimmer 3s ease-in-out 0.7s infinite',
+                        }}>
+                            <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
+                        </div>
+                    </>
+                )}
 
                 <div style={{ marginTop: 32 }}>
                     {quiz.settings?.votingMode === 'all_voted' ? (
@@ -439,121 +497,10 @@ function HostDashboard() {
                 <div className="host-controls">
                     <button
                         className={`btn ${votingEnded ? 'btn-primary' : 'btn-secondary'} btn-large`}
-                        onClick={handleRevealCaricature}
+                        onClick={isLastVotingPhase ? handleRevealName : handleAdvancePhase}
                         style={{ opacity: votingEnded ? 1 : 0.8 }}
                     >
-                        {votingEnded ? '👀 Reveal 2nd Caricature' : '⏭️ Skip and Reveal Pic'}
-                    </button>
-                </div>
-            </div>
-        );
-    }
-
-    // ── REVEALING state (2nd pic, still voting for 1pt) ──────────
-    if (currentRound.status === 'revealing' && currentPerson) {
-        const revealVotesCount = currentRound.votes ? Object.keys(currentRound.votes).length : 0;
-        const allVoted = quiz.players.length > 0 && revealVotesCount >= quiz.players.length;
-
-        return (
-            <div className="host-screen">
-                {showConfetti && <Confetti />}
-                <div className="host-info-bar">
-                    <div className="host-badge">
-                        👥 {quiz.players.length} players
-                    </div>
-                    <div className="host-badge">
-                        🎯 Round {quiz.currentRoundIndex + 1}/{quiz.rounds.length}
-                    </div>
-                    <div className="host-badge">
-                        ✅ {revealVotesCount} votes
-                    </div>
-                </div>
-
-                <h2 style={{
-                    fontFamily: 'Outfit',
-                    fontSize: 28,
-                    fontWeight: 700,
-                    color: 'var(--text-secondary)',
-                    marginBottom: 8,
-                }}>
-                    2nd Caricature — Still guessing! 🧐
-                </h2>
-                <p style={{ color: 'var(--text-muted)', fontSize: 14, marginBottom: 24 }}>
-                    Players can still vote for 1 point
-                </p>
-                <style>{`
-                    @keyframes zoomReveal {
-                        0% { transform: scale(0); opacity: 0; }
-                        50% { transform: scale(1.12); opacity: 1; }
-                        70% { transform: scale(0.97); }
-                        85% { transform: scale(1.06); }
-                        100% { transform: scale(1.05); }
-                    }
-                    @keyframes glowPulse {
-                        0%, 100% { box-shadow: 0 0 20px rgba(236, 72, 153, 0.4), 0 20px 40px rgba(0,0,0,0.3); }
-                        50% { box-shadow: 0 0 50px rgba(236, 72, 153, 0.8), 0 20px 60px rgba(0,0,0,0.4); }
-                    }
-                    @keyframes borderShimmer {
-                        0% { border-color: var(--pink); }
-                        50% { border-color: var(--gold); }
-                        100% { border-color: var(--pink); }
-                    }
-                `}</style>
-                <div className="host-caricature" style={{
-                    border: '3px solid var(--pink)',
-                    animation: 'zoomReveal 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, glowPulse 2s ease-in-out 0.7s infinite, borderShimmer 3s ease-in-out 0.7s infinite',
-                }}>
-                    <img src={currentPerson.caricatureUrl2} alt="Caricature 2" />
-                </div>
-
-                <div style={{ marginTop: 24 }}>
-                    {quiz.settings?.votingMode === 'all_voted' ? (
-                        <div style={{ textAlign: 'center' }}>
-                            <div className="glass-card" style={{ display: 'inline-block', padding: '12px 28px' }}>
-                                <div style={{ fontSize: 22, fontWeight: 800, color: allVoted ? 'var(--pink)' : 'var(--gold)', marginBottom: 4 }}>
-                                    {revealVotesCount} / {quiz.players.length}
-                                </div>
-                                <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-                                    {allVoted ? '🙌 Everyone has voted!' : 'Waiting for votes...'}
-                                </div>
-                            </div>
-                        </div>
-                    ) : (
-                        <>
-                            {!revealingEnded && currentRound.revealingEndsAt && (
-                                <Countdown
-                                    endsAt={currentRound.revealingEndsAt}
-                                    onComplete={() => setRevealingEnded(true)}
-                                />
-                            )}
-                            {revealingEnded && (
-                                <div style={{ textAlign: 'center' }}>
-                                    <p style={{
-                                        fontSize: 20,
-                                        fontWeight: 700,
-                                        color: 'var(--gold)',
-                                        marginBottom: 8,
-                                    }}>
-                                        {revealVotesCount >= quiz.players.length && quiz.players.length > 0
-                                            ? "🙌 Everyone has voted!"
-                                            : "⏰ Time's up!"}
-                                    </p>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
-                                        {revealVotesCount} votes received
-                                    </p>
-                                </div>
-                            )}
-                        </>
-                    )}
-                </div>
-
-                <div className="host-controls">
-                    <button
-                        className={`btn ${revealingEnded || allVoted ? 'btn-primary' : 'btn-secondary'} btn-large`}
-                        onClick={handleRevealName}
-                        style={{ opacity: revealingEnded || allVoted ? 1 : 0.8 }}
-                    >
-                        {revealingEnded || allVoted ? '✨ Reveal The Name!' : '⏭️ Skip and Reveal Name'}
+                        {votingEnded ? nextButtonText : skipButtonText}
                     </button>
                 </div>
             </div>
