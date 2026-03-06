@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { createQuiz, deleteQuiz, publishQuiz, addPerson, updatePerson, removePerson, updateQuizSettings, uploadImage, subscribeToQuiz, listQuizzes, onAuthChange, loginWithGoogle, logout } from '@/lib/db';
+import { createQuiz, deleteQuiz, publishQuiz, addPerson, updatePerson, removePerson, updateQuizSettings, uploadImage, subscribeToQuiz, listQuizzes, onAuthChange, loginWithGoogle, logout, restartQuiz } from '@/lib/db';
 import { Person, Quiz } from '@/lib/types';
 import { User } from 'firebase/auth';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
@@ -398,6 +398,16 @@ function AdminDashboard() {
         }
     }, [quizId, router]);
 
+    const handleRestartQuiz = useCallback(async (idToRestart: string) => {
+        if (!confirm('Are you sure you want to restart this quiz? All current players, rounds, and scores will be deleted so you can start fresh.')) return;
+        try {
+            await restartQuiz(idToRestart);
+            setSuccess('Quiz restarted successfully');
+        } catch (err: any) {
+            showError(`Failed to restart quiz: ${err.message}`);
+        }
+    }, []);
+
     const joinUrl = quiz && baseUrl
         ? `${baseUrl}/play/${quiz.id}`
         : '';
@@ -493,9 +503,12 @@ function AdminDashboard() {
                                             {q.persons.length} rounds • {q.players.length} players
                                         </p>
                                     </div>
-                                    <div style={{ display: 'flex', gap: 8 }}>
-                                        <button className="btn btn-secondary" onClick={() => router.push(`/admin?quizId=${q.id}`)} style={{ flex: 1, fontSize: 13 }}>
+                                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                        <button className="btn btn-secondary" onClick={() => router.push(`/admin?quizId=${q.id}`)} style={{ flex: '1 1 auto', fontSize: 13, minWidth: '80px' }}>
                                             Manage
+                                        </button>
+                                        <button className="btn btn-secondary" onClick={() => handleRestartQuiz(q.id)} style={{ padding: '8px 12px', fontSize: 12, border: '1px solid var(--gold)', color: 'var(--gold)' }} title="Restart Quiz (Erase Players)">
+                                            <span className="native-emoji">🔄</span> Restart
                                         </button>
                                         <button className="btn btn-danger" onClick={() => handleDeleteQuiz(q.id)} style={{ padding: '8px 12px', fontSize: 12 }}>
                                             ✕
@@ -591,318 +604,322 @@ function AdminDashboard() {
                                 <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>
                                     {quiz.persons.length} {quiz.persons.length === 1 ? 'person' : 'persons'} added
                                 </p>
+                                <div style={{ display: 'flex', gap: 12 }}>
+                                    <button className="btn btn-secondary" onClick={() => handleRestartQuiz(quiz.id)} style={{ fontSize: 13, border: '1px solid var(--gold)', color: 'var(--gold)' }} title="Restart Quiz (Erase Players)">
+                                        <span className="native-emoji">🔄</span> Restart
+                                    </button>
+                                    <button className="btn btn-danger" onClick={() => handleDeleteQuiz()} style={{ fontSize: 13 }}>
+                                        Delete
+                                    </button>
+                                </div>
                             </div>
-                            <button className="btn btn-danger" onClick={() => handleDeleteQuiz()} style={{ fontSize: 12 }}>
-                                Delete Quiz
-                            </button>
-                        </div>
 
-                        {/* Quiz Settings */}
-                        <div className="glass-card" style={{ marginBottom: 24 }}>
-                            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
-                                Quiz Settings <span className="native-emoji">⚙️</span>
-                            </h3>
+                            {/* Quiz Settings */}
+                            <div className="glass-card" style={{ marginBottom: 24 }}>
+                                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
+                                    Quiz Settings <span className="native-emoji">⚙️</span>
+                                </h3>
 
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                                {/* Mode Toggle */}
-                                <div>
-                                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                        Voting Mode
-                                    </label>
-                                    <div style={{
-                                        display: 'flex',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        padding: 4,
-                                        borderRadius: 12,
-                                        border: '1px solid var(--border-color)'
-                                    }}>
-                                        <button
-                                            className={`btn ${quiz.settings?.votingMode !== 'all_voted' ? 'btn-primary' : ''}`}
-                                            style={{ flex: 1, height: 36, fontSize: 13, border: 'none', borderRadius: 8 }}
-                                            onClick={() => handleUpdateSettings(quiz.settings?.votingDuration || 15, 'countdown')}
-                                        >
-                                            <span className="native-emoji">⏱️</span> Countdown
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                                    {/* Mode Toggle */}
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                            Voting Mode
+                                        </label>
+                                        <div style={{
+                                            display: 'flex',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            padding: 4,
+                                            borderRadius: 12,
+                                            border: '1px solid var(--border-color)'
+                                        }}>
+                                            <button
+                                                className={`btn ${quiz.settings?.votingMode !== 'all_voted' ? 'btn-primary' : ''}`}
+                                                style={{ flex: 1, height: 36, fontSize: 13, border: 'none', borderRadius: 8 }}
+                                                onClick={() => handleUpdateSettings(quiz.settings?.votingDuration || 15, 'countdown')}
+                                            >
+                                                <span className="native-emoji">⏱️</span> Countdown
+                                            </button>
+                                            <button
+                                                className={`btn ${quiz.settings?.votingMode === 'all_voted' ? 'btn-primary' : ''}`}
+                                                style={{ flex: 1, height: 36, fontSize: 13, border: 'none', borderRadius: 8 }}
+                                                onClick={() => handleUpdateSettings(quiz.settings?.votingDuration || 15, 'all_voted')}
+                                            >
+                                                <span className="native-emoji">🤝</span> Wait for All
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Timer Slider (Visible only in countdown mode) */}
+                                    {quiz.settings?.votingMode !== 'all_voted' && (
+                                        <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <label style={{ fontSize: 14 }}>Voting Time</label>
+                                                <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--pink)' }}>
+                                                    {quiz.settings?.votingDuration || 15}s
+                                                </span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min="5"
+                                                max="60"
+                                                step="5"
+                                                value={quiz.settings?.votingDuration || 15}
+                                                onChange={(e) => handleUpdateSettings(parseInt(e.target.value), 'countdown')}
+                                                className="slider"
+                                                style={{ width: '100%', cursor: 'pointer' }}
+                                            />
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
+                                                <span>5s</span>
+                                                <span>30s</span>
+                                                <span>60s</span>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {quiz.settings?.votingMode === 'all_voted' && (
+                                        <div className="animate-in" style={{ padding: '8px 12px', background: 'rgba(236, 72, 153, 0.05)', borderRadius: 8, border: '1px solid rgba(236, 72, 153, 0.1)' }}>
+                                            <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                                                Rounds will stay open until every player has submitted their vote.
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Add / Edit Person Form */}
+                            <div className="glass-card" style={{ marginBottom: 24 }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                    <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
+                                        {editingPersonId ? 'Edit Person' : 'Add a Person'}
+                                    </h3>
+                                    {editingPersonId && (
+                                        <button className="btn btn-secondary" onClick={resetForm} style={{ fontSize: 12, padding: '4px 12px' }}>
+                                            Cancel Edit
                                         </button>
-                                        <button
-                                            className={`btn ${quiz.settings?.votingMode === 'all_voted' ? 'btn-primary' : ''}`}
-                                            style={{ flex: 1, height: 36, fontSize: 13, border: 'none', borderRadius: 8 }}
-                                            onClick={() => handleUpdateSettings(quiz.settings?.votingDuration || 15, 'all_voted')}
-                                        >
-                                            <span className="native-emoji">🤝</span> Wait for All
-                                        </button>
+                                    )}
+                                </div>
+
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                            First Name *
+                                        </label>
+                                        <input
+                                            className="input"
+                                            value={firstName}
+                                            onChange={e => setFirstName(e.target.value)}
+                                            placeholder="e.g., Anna"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                            Surname
+                                        </label>
+                                        <input
+                                            className="input"
+                                            value={lastName}
+                                            onChange={e => setLastName(e.target.value)}
+                                            placeholder="e.g., Smith"
+                                        />
                                     </div>
                                 </div>
 
-                                {/* Timer Slider (Visible only in countdown mode) */}
-                                {quiz.settings?.votingMode !== 'all_voted' && (
-                                    <div className="animate-in" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <label style={{ fontSize: 14 }}>Voting Time</label>
-                                            <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--pink)' }}>
-                                                {quiz.settings?.votingDuration || 15}s
-                                            </span>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                                    <div>
+                                        <WordTagInput
+                                            label="Hungarian Words"
+                                            words={personWordsHU}
+                                            onChange={setPersonWordsHU}
+                                            placeholder="szó1, Enter..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                            <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>English Words</label>
+                                            <button
+                                                className="btn btn-secondary"
+                                                style={{ fontSize: 9, padding: '2px 8px', height: 'auto' }}
+                                                onClick={handleTranslate}
+                                                disabled={isTranslating || personWordsEN.length === 0}
+                                            >
+                                                {isTranslating ? '⌛ Translating...' : <><span className="native-emoji">✨</span> Auto-Translate</>}
+                                            </button>
+                                        </div>
+                                        <WordTagInput
+                                            words={personWordsEN}
+                                            onChange={setPersonWordsEN}
+                                            placeholder="word1, Enter..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <WordTagInput
+                                            label="Ukrainian Words"
+                                            words={personWordsUA}
+                                            onChange={setPersonWordsUA}
+                                            placeholder="слово1, Enter..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <WordTagInput
+                                            label="Russian Words"
+                                            words={personWordsRU}
+                                            onChange={setPersonWordsRU}
+                                            placeholder="слово1, Enter..."
+                                        />
+                                    </div>
+                                </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                                    {/* Caricature 1 Upload */}
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                            Caricature 1 (Voting)
+                                        </label>
+                                        <div
+                                            className={`upload-zone ${caricatureUrl1 ? 'has-image' : ''}`}
+                                            onClick={() => c1InputRef.current?.click()}
+                                            style={{ aspectRatio: '16/9', maxHeight: '140px' }}
+                                        >
+                                            {caricatureUrl1 ? (
+                                                <img src={caricatureUrl1} alt="Caricature 1" style={{ objectFit: 'contain' }} />
+                                            ) : uploading === 'c1' ? (
+                                                <div className="waiting-dots"><span></span><span></span><span></span></div>
+                                            ) : (
+                                                <div style={{ transform: 'scale(0.8)' }}>
+                                                    <span className="upload-icon native-emoji">🎨</span>
+                                                    <span className="upload-text">Voting Img</span>
+                                                </div>
+                                            )}
                                         </div>
                                         <input
-                                            type="range"
-                                            min="5"
-                                            max="60"
-                                            step="5"
-                                            value={quiz.settings?.votingDuration || 15}
-                                            onChange={(e) => handleUpdateSettings(parseInt(e.target.value), 'countdown')}
-                                            className="slider"
-                                            style={{ width: '100%', cursor: 'pointer' }}
+                                            ref={c1InputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            style={{ display: 'none' }}
+                                            onChange={e => {
+                                                const file = e.target.files?.[0];
+                                                if (file) handleUpload(file, 'c1');
+                                            }}
                                         />
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-muted)' }}>
-                                            <span>5s</span>
-                                            <span>30s</span>
-                                            <span>60s</span>
-                                        </div>
                                     </div>
-                                )}
 
-                                {quiz.settings?.votingMode === 'all_voted' && (
-                                    <div className="animate-in" style={{ padding: '8px 12px', background: 'rgba(236, 72, 153, 0.05)', borderRadius: 8, border: '1px solid rgba(236, 72, 153, 0.1)' }}>
-                                        <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.4 }}>
-                                            Rounds will stay open until every player has submitted their vote.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Add / Edit Person Form */}
-                        <div className="glass-card" style={{ marginBottom: 24 }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                                <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
-                                    {editingPersonId ? 'Edit Person' : 'Add a Person'}
-                                </h3>
-                                {editingPersonId && (
-                                    <button className="btn btn-secondary" onClick={resetForm} style={{ fontSize: 12, padding: '4px 12px' }}>
-                                        Cancel Edit
-                                    </button>
-                                )}
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                        First Name *
-                                    </label>
-                                    <input
-                                        className="input"
-                                        value={firstName}
-                                        onChange={e => setFirstName(e.target.value)}
-                                        placeholder="e.g., Anna"
-                                    />
-                                </div>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                        Surname
-                                    </label>
-                                    <input
-                                        className="input"
-                                        value={lastName}
-                                        onChange={e => setLastName(e.target.value)}
-                                        placeholder="e.g., Smith"
-                                    />
-                                </div>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                                <div>
-                                    <WordTagInput
-                                        label="Hungarian Words"
-                                        words={personWordsHU}
-                                        onChange={setPersonWordsHU}
-                                        placeholder="szó1, Enter..."
-                                    />
-                                </div>
-                                <div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                                        <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>English Words</label>
-                                        <button
-                                            className="btn btn-secondary"
-                                            style={{ fontSize: 9, padding: '2px 8px', height: 'auto' }}
-                                            onClick={handleTranslate}
-                                            disabled={isTranslating || personWordsEN.length === 0}
+                                    {/* Caricature 2 Upload */}
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                            Caricature 2 (Reveal)
+                                        </label>
+                                        <div
+                                            className={`upload-zone ${caricatureUrl2 ? 'has-image' : ''}`}
+                                            onClick={() => c2InputRef.current?.click()}
+                                            style={{ aspectRatio: '16/9', maxHeight: '140px' }}
                                         >
-                                            {isTranslating ? '⌛ Translating...' : <><span className="native-emoji">✨</span> Auto-Translate</>}
-                                        </button>
-                                    </div>
-                                    <WordTagInput
-                                        words={personWordsEN}
-                                        onChange={setPersonWordsEN}
-                                        placeholder="word1, Enter..."
-                                    />
-                                </div>
-                                <div>
-                                    <WordTagInput
-                                        label="Ukrainian Words"
-                                        words={personWordsUA}
-                                        onChange={setPersonWordsUA}
-                                        placeholder="слово1, Enter..."
-                                    />
-                                </div>
-                                <div>
-                                    <WordTagInput
-                                        label="Russian Words"
-                                        words={personWordsRU}
-                                        onChange={setPersonWordsRU}
-                                        placeholder="слово1, Enter..."
-                                    />
-                                </div>
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
-                                {/* Caricature 1 Upload */}
-                                <div>
-                                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                        Caricature 1 (Voting)
-                                    </label>
-                                    <div
-                                        className={`upload-zone ${caricatureUrl1 ? 'has-image' : ''}`}
-                                        onClick={() => c1InputRef.current?.click()}
-                                        style={{ aspectRatio: '16/9', maxHeight: '140px' }}
-                                    >
-                                        {caricatureUrl1 ? (
-                                            <img src={caricatureUrl1} alt="Caricature 1" style={{ objectFit: 'contain' }} />
-                                        ) : uploading === 'c1' ? (
-                                            <div className="waiting-dots"><span></span><span></span><span></span></div>
-                                        ) : (
-                                            <div style={{ transform: 'scale(0.8)' }}>
-                                                <span className="upload-icon native-emoji">🎨</span>
-                                                <span className="upload-text">Voting Img</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <input
-                                        ref={c1InputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        style={{ display: 'none' }}
-                                        onChange={e => {
-                                            const file = e.target.files?.[0];
-                                            if (file) handleUpload(file, 'c1');
-                                        }}
-                                    />
-                                </div>
-
-                                {/* Caricature 2 Upload */}
-                                <div>
-                                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
-                                        Caricature 2 (Reveal)
-                                    </label>
-                                    <div
-                                        className={`upload-zone ${caricatureUrl2 ? 'has-image' : ''}`}
-                                        onClick={() => c2InputRef.current?.click()}
-                                        style={{ aspectRatio: '16/9', maxHeight: '140px' }}
-                                    >
-                                        {caricatureUrl2 ? (
-                                            <img src={caricatureUrl2} alt="Caricature 2" style={{ objectFit: 'contain' }} />
-                                        ) : uploading === 'c2' ? (
-                                            <div className="waiting-dots"><span></span><span></span><span></span></div>
-                                        ) : (
-                                            <div style={{ transform: 'scale(0.8)' }}>
-                                                <span className="upload-icon native-emoji">✨</span>
-                                                <span className="upload-text">Reveal Img</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    <input
-                                        ref={c2InputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        style={{ display: 'none' }}
-                                        onChange={e => {
-                                            const file = e.target.files?.[0];
-                                            if (file) handleUpload(file, 'c2');
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                            <button
-                                className="btn btn-primary"
-                                style={{ width: '100%', background: editingPersonId ? 'var(--gold)' : undefined, color: editingPersonId ? '#000' : undefined }}
-                                onClick={handleAddOrUpdatePerson}
-                                disabled={!firstName.trim() || !caricatureUrl1 || !caricatureUrl2 || (!personWordsEN.length && !personWordsHU.length && !personWordsUA.length && !personWordsRU.length)}
-                            >
-                                {editingPersonId ? (
-                                    <><span className="native-emoji">💾</span> Save Changes</>
-                                ) : (
-                                    <><span className="native-emoji">➕</span> Add Person</>
-                                )}
-                            </button>
-                        </div>
-
-                        {/* Persons List */}
-                        {quiz.persons.length > 0 && (
-                            <div style={{ marginBottom: 24 }}>
-                                <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
-                                    Added ({quiz.persons.length})
-                                </h3>
-                                <div style={{ display: 'grid', gap: 12 }}>
-                                    {quiz.persons.map((person, index) => (
-                                        <div key={person.id} className="person-card">
-                                            <div className="person-card-header">
-                                                <span className="person-card-name">
-                                                    {index + 1}. {person.name}
-                                                </span>
-                                                <div style={{ display: 'flex', gap: 8 }}>
-                                                    <button
-                                                        className="btn btn-secondary"
-                                                        style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 12px', fontSize: 12, border: 'none' }}
-                                                        onClick={() => handleEditPerson(person)}
-                                                        title="Edit"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                    <button
-                                                        className="person-card-remove"
-                                                        onClick={() => handleRemovePerson(person.id)}
-                                                        title="Remove"
-                                                    >
-                                                        ✕
-                                                    </button>
+                                            {caricatureUrl2 ? (
+                                                <img src={caricatureUrl2} alt="Caricature 2" style={{ objectFit: 'contain' }} />
+                                            ) : uploading === 'c2' ? (
+                                                <div className="waiting-dots"><span></span><span></span><span></span></div>
+                                            ) : (
+                                                <div style={{ transform: 'scale(0.8)' }}>
+                                                    <span className="upload-icon native-emoji">✨</span>
+                                                    <span className="upload-text">Reveal Img</span>
                                                 </div>
-                                            </div>
-                                            <div className="admin-person-preview" style={{ padding: '0 16px 16px' }}>
-                                                <div className="admin-thumb-pair">
-                                                    <img src={person.caricatureUrl1} alt="C1" title="Caricature 1" />
-                                                    <img src={person.caricatureUrl2} alt="C2" title="Caricature 2" />
-                                                </div>
-                                                <div style={{ flex: 1 }}>
-                                                    <h4 style={{ fontWeight: 600, color: 'var(--gold)' }}>{person.name}</h4>
-                                                    <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Round {index + 1}</p>
-
-                                                    {Object.keys(person.words || {}).length > 0 && (
-                                                        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                                                            {((person.words?.en || person.words?.hu || person.words?.ua || person.words?.ru || [])).map((w, i) => (
-                                                                <span key={i} style={{
-                                                                    fontSize: 10,
-                                                                    background: 'rgba(255,255,255,0.1)',
-                                                                    padding: '2px 6px',
-                                                                    borderRadius: 4,
-                                                                    color: 'var(--pink)'
-                                                                }}>
-                                                                    {w}
-                                                                </span>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                </div>
-
-                                            </div>
+                                            )}
                                         </div>
-                                    ))}
+                                        <input
+                                            ref={c2InputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            style={{ display: 'none' }}
+                                            onChange={e => {
+                                                const file = e.target.files?.[0];
+                                                if (file) handleUpload(file, 'c2');
+                                            }}
+                                        />
+                                    </div>
                                 </div>
+                                <button
+                                    className="btn btn-primary"
+                                    style={{ width: '100%', background: editingPersonId ? 'var(--gold)' : undefined, color: editingPersonId ? '#000' : undefined }}
+                                    onClick={handleAddOrUpdatePerson}
+                                    disabled={!firstName.trim() || !caricatureUrl1 || !caricatureUrl2 || (!personWordsEN.length && !personWordsHU.length && !personWordsUA.length && !personWordsRU.length)}
+                                >
+                                    {editingPersonId ? (
+                                        <><span className="native-emoji">💾</span> Save Changes</>
+                                    ) : (
+                                        <><span className="native-emoji">➕</span> Add Person</>
+                                    )}
+                                </button>
                             </div>
-                        )}
 
+                            {/* Persons List */}
+                            {quiz.persons.length > 0 && (
+                                <div style={{ marginBottom: 24 }}>
+                                    <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 12 }}>
+                                        Added ({quiz.persons.length})
+                                    </h3>
+                                    <div style={{ display: 'grid', gap: 12 }}>
+                                        {quiz.persons.map((person, index) => (
+                                            <div key={person.id} className="person-card">
+                                                <div className="person-card-header">
+                                                    <span className="person-card-name">
+                                                        {index + 1}. {person.name}
+                                                    </span>
+                                                    <div style={{ display: 'flex', gap: 8 }}>
+                                                        <button
+                                                            className="btn btn-secondary"
+                                                            style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 12px', fontSize: 12, border: 'none' }}
+                                                            onClick={() => handleEditPerson(person)}
+                                                            title="Edit"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                        <button
+                                                            className="person-card-remove"
+                                                            onClick={() => handleRemovePerson(person.id)}
+                                                            title="Remove"
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div className="admin-person-preview" style={{ padding: '0 16px 16px' }}>
+                                                    <div className="admin-thumb-pair">
+                                                        <img src={person.caricatureUrl1} alt="C1" title="Caricature 1" />
+                                                        <img src={person.caricatureUrl2} alt="C2" title="Caricature 2" />
+                                                    </div>
+                                                    <div style={{ flex: 1 }}>
+                                                        <h4 style={{ fontWeight: 600, color: 'var(--gold)' }}>{person.name}</h4>
+                                                        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Round {index + 1}</p>
 
-                        {quiz.persons.length < 2 && quiz.persons.length > 0 && (
-                            <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 14, marginTop: 8 }}>
-                                Add at least 2 persons to publish
-                            </p>
-                        )}
+                                                        {Object.keys(person.words || {}).length > 0 && (
+                                                            <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                                                {((person.words?.en || person.words?.hu || person.words?.ua || person.words?.ru || [])).map((w, i) => (
+                                                                    <span key={i} style={{
+                                                                        fontSize: 10,
+                                                                        background: 'rgba(255,255,255,0.1)',
+                                                                        padding: '2px 6px',
+                                                                        borderRadius: 4,
+                                                                        color: 'var(--pink)'
+                                                                    }}>
+                                                                        {w}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {quiz.persons.length < 2 && quiz.persons.length > 0 && (
+                                <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 14, marginTop: 8 }}>
+                                    Add at least 2 persons to publish
+                                </p>
+                            )}
+                        </div>
                     </>
                 )}
 

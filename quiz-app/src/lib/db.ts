@@ -223,6 +223,18 @@ export async function publishQuiz(quizId: string) {
     });
 }
 
+export async function restartQuiz(quizId: string) {
+    const quizRef = dbRef(db, `quizzes/${quizId}`);
+
+    // Purge rounds and players, reset status
+    await update(quizRef, {
+        status: 'draft',
+        currentRoundIndex: 0,
+        rounds: null,
+        players: null
+    });
+}
+
 export async function deleteQuiz(quizId: string) {
     const quizRef = dbRef(db, `quizzes/${quizId}`);
     await remove(quizRef);

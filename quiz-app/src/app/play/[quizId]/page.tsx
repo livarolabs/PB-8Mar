@@ -587,13 +587,15 @@ export default function PlayerPage() {
                         </div>
                     ) : (
                         <div style={{
-                            maxHeight: '35vh',
+                            flex: 1,
                             overflowY: 'auto',
                             padding: '4px 0',
                             display: 'flex',
                             flexDirection: 'column',
                             gap: 8,
                             WebkitOverflowScrolling: 'touch',
+                            touchAction: 'pan-y',
+                            minHeight: 0,
                         }}>
                             {[...shuffledPersonNames]
                                 .sort((a, b) => a.name.localeCompare(b.name))
