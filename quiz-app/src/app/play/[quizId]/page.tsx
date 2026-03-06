@@ -595,52 +595,54 @@ export default function PlayerPage() {
                             gap: 8,
                             WebkitOverflowScrolling: 'touch',
                         }}>
-                            {shuffledPersonNames.map((person: Person, i: number) => (
-                                <button
-                                    key={person.id}
-                                    onClick={() => handleVote(person.id)}
-                                    disabled={votedThisRound}
-                                    style={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 12,
-                                        width: '100%',
-                                        padding: '14px 18px',
-                                        borderRadius: 14,
-                                        border: selectedPersonId === person.id
-                                            ? '2px solid var(--pink)'
-                                            : '2px solid rgba(255,255,255,0.1)',
-                                        background: selectedPersonId === person.id
-                                            ? 'rgba(236, 72, 153, 0.15)'
-                                            : 'rgba(255,255,255,0.05)',
-                                        color: 'var(--text-primary)',
-                                        fontSize: 15,
-                                        fontWeight: 600,
-                                        fontFamily: 'Outfit, sans-serif',
-                                        cursor: 'pointer',
-                                        transition: 'all 0.2s ease',
-                                        textAlign: 'left',
-                                    }}
-                                >
-                                    <span style={{
-                                        width: 28, height: 28,
-                                        borderRadius: '50%',
-                                        background: selectedPersonId === person.id
-                                            ? 'var(--pink)'
-                                            : 'rgba(255,255,255,0.1)',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: 13,
-                                        fontWeight: 700,
-                                        color: selectedPersonId === person.id ? '#fff' : 'var(--text-muted)',
-                                        flexShrink: 0,
-                                    }}>
-                                        {String.fromCharCode(65 + i)}
-                                    </span>
-                                    {person.name}
-                                </button>
-                            ))}
+                            {[...shuffledPersonNames]
+                                .sort((a, b) => a.name.localeCompare(b.name))
+                                .map((person: Person, i: number) => (
+                                    <button
+                                        key={person.id}
+                                        onClick={() => handleVote(person.id)}
+                                        disabled={votedThisRound}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 12,
+                                            width: '100%',
+                                            padding: '14px 18px',
+                                            borderRadius: 14,
+                                            border: selectedPersonId === person.id
+                                                ? '2px solid var(--pink)'
+                                                : '2px solid rgba(255,255,255,0.1)',
+                                            background: selectedPersonId === person.id
+                                                ? 'rgba(236, 72, 153, 0.15)'
+                                                : 'rgba(255,255,255,0.05)',
+                                            color: 'var(--text-primary)',
+                                            fontSize: 15,
+                                            fontWeight: 600,
+                                            fontFamily: 'Outfit, sans-serif',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s ease',
+                                            textAlign: 'left',
+                                        }}
+                                    >
+                                        <span style={{
+                                            width: 28, height: 28,
+                                            borderRadius: '50%',
+                                            background: selectedPersonId === person.id
+                                                ? 'var(--pink)'
+                                                : 'rgba(255,255,255,0.1)',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            fontSize: 13,
+                                            fontWeight: 700,
+                                            color: selectedPersonId === person.id ? '#fff' : 'var(--text-muted)',
+                                            flexShrink: 0,
+                                        }}>
+                                            {String.fromCharCode(65 + i)}
+                                        </span>
+                                        {person.name}
+                                    </button>
+                                ))}
                         </div>
                     )}
                 </div>

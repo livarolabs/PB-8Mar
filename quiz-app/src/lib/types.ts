@@ -2,7 +2,9 @@
 
 export interface Person {
   id: string;
-  name: string;
+  name: string; // Keep as full name combining first and last for backwards compatibility
+  firstName?: string;
+  lastName?: string;
   caricatureUrl1: string;
   caricatureUrl2: string;
   words: Record<Language, string[]>;

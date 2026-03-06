@@ -2,8 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { subscribeToQuiz, createQuiz, addPerson, removePerson, publishQuiz, deleteQuiz, uploadImage, listQuizzes, onAuthChange, loginWithGoogle, logout, updateQuizSettings } from '@/lib/db';
-import { Quiz } from '@/lib/types';
+import { createQuiz, deleteQuiz, publishQuiz, addPerson, updatePerson, removePerson, updateQuizSettings, uploadImage, subscribeToQuiz, listQuizzes, onAuthChange, loginWithGoogle, logout } from '@/lib/db';
+import { Person, Quiz } from '@/lib/types';
 import { User } from 'firebase/auth';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 import EmojiText from '@/components/EmojiText';
@@ -129,15 +129,19 @@ function AdminDashboard() {
     const [quiz, setQuiz] = useState<Quiz | null>(null);
     const [baseUrl, setBaseUrl] = useState('');
     const [newQuizTitle, setNewQuizTitle] = useState('New Quiz 💐');
-    const [personName, setPersonName] = useState('');
+    const [personName, setPersonName] = useState(''); // Kept for backwards compatibility but we'll build it from first/last
+    const [firstName, setFirstName] = useState('');
+    const [lastName, setLastName] = useState('');
     const [caricatureUrl1, setCaricatureUrl1] = useState('');
     const [caricatureUrl2, setCaricatureUrl2] = useState('');
+    const [editingPersonId, setEditingPersonId] = useState<string | null>(null);
     const [personWordsHU, setPersonWordsHU] = useState<string[]>([]);
     const [personWordsEN, setPersonWordsEN] = useState<string[]>([]);
     const [personWordsUA, setPersonWordsUA] = useState<string[]>([]);
     const [personWordsRU, setPersonWordsRU] = useState<string[]>([]);
     const [uploading, setUploading] = useState<'c1' | 'c2' | null>(null);
-    const [error, setError] = useState<string | null>(null);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(true);
     const [isTranslating, setIsTranslating] = useState(false);
 
@@ -184,7 +188,8 @@ function AdminDashboard() {
 
     const showError = (msg: string) => {
         setError(msg);
-        setTimeout(() => setError(null), 4000);
+        setSuccess(''); // Clear success message on error
+        setTimeout(() => setError(''), 4000);
     };
 
     const handleLogin = async () => {
@@ -232,10 +237,31 @@ function AdminDashboard() {
         }
     }, []);
 
-    const handleAddPerson = useCallback(async () => {
+    const resetForm = () => {
+        setPersonName('');
+        setFirstName('');
+        setLastName('');
+        setCaricatureUrl1('');
+        setCaricatureUrl2('');
+        setPersonWordsHU([]);
+        setPersonWordsEN([]);
+        setPersonWordsUA([]);
+        setPersonWordsRU([]);
+        setEditingPersonId(null);
+        if (c1InputRef.current) c1InputRef.current.value = '';
+        if (c2InputRef.current) c2InputRef.current.value = '';
+        setError('');
+        setSuccess('');
+    };
+
+    const handleAddOrUpdatePerson = useCallback(async () => {
         const hasWords = personWordsEN.length > 0 || personWordsHU.length > 0 || personWordsUA.length > 0 || personWordsRU.length > 0;
-        if (!quizId || !personName.trim() || !caricatureUrl1 || !caricatureUrl2 || !hasWords) {
-            showError("Please provide at least one word in any language.");
+
+        // Build the full name for backwards compatibility
+        const generatedFullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+
+        if (!quizId || !generatedFullName || !caricatureUrl1 || !caricatureUrl2 || !hasWords) {
+            showError("Please provide at least a First Name, both images, and one word.");
             return;
         }
 
@@ -247,20 +273,25 @@ function AdminDashboard() {
         };
 
         try {
-            await addPerson(quizId, personName.trim(), caricatureUrl1, caricatureUrl2, words);
-            setPersonName('');
-            setCaricatureUrl1('');
-            setCaricatureUrl2('');
-            setPersonWordsHU([]);
-            setPersonWordsEN([]);
-            setPersonWordsUA([]);
-            setPersonWordsRU([]);
-            if (c1InputRef.current) c1InputRef.current.value = '';
-            if (c2InputRef.current) c2InputRef.current.value = '';
+            if (editingPersonId) {
+                await updatePerson(quizId, editingPersonId, {
+                    name: generatedFullName,
+                    firstName: firstName.trim(),
+                    lastName: lastName.trim(),
+                    caricatureUrl1,
+                    caricatureUrl2,
+                    words
+                });
+                setSuccess(`Updated ${generatedFullName} successfully!`);
+            } else {
+                await addPerson(quizId, generatedFullName, caricatureUrl1, caricatureUrl2, words, firstName.trim(), lastName.trim());
+                setSuccess(`Added ${generatedFullName} successfully!`);
+            }
+            resetForm();
         } catch (err: any) {
-            showError(`Failed to add person: ${err.message}`);
+            showError(`Failed to save person: ${err.message}`);
         }
-    }, [quizId, personName, caricatureUrl1, caricatureUrl2, personWordsHU, personWordsEN, personWordsUA, personWordsRU]);
+    }, [quizId, editingPersonId, firstName, lastName, caricatureUrl1, caricatureUrl2, personWordsHU, personWordsEN, personWordsUA, personWordsRU]);
 
     const handleTranslate = useCallback(async () => {
         if (personWordsEN.length === 0) return;
@@ -301,6 +332,33 @@ function AdminDashboard() {
             showError(`Failed to remove person: ${err.message}`);
         }
     }, [quizId]);
+
+    const handleEditPerson = (person: Person) => {
+        setEditingPersonId(person.id);
+
+        // Extract first/last name from the full name if they don't exist yet
+        let parsedFirst = person.firstName || '';
+        let parsedLast = person.lastName || '';
+
+        if (!person.firstName && !person.lastName && person.name) {
+            const parts = person.name.split(' ');
+            parsedFirst = parts[0];
+            parsedLast = parts.slice(1).join(' ');
+        }
+
+        setFirstName(parsedFirst);
+        setLastName(parsedLast);
+        setPersonName(person.name);
+        setCaricatureUrl1(person.caricatureUrl1);
+        setCaricatureUrl2(person.caricatureUrl2);
+        setPersonWordsHU(person.words?.hu || []);
+        setPersonWordsEN(person.words?.en || []);
+        setPersonWordsUA(person.words?.ua || []);
+        setPersonWordsRU(person.words?.ru || []);
+
+        // Scroll to top to ensure the form is visible
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
 
     const handleUpdateSettings = useCallback(async (newDuration: number, mode?: 'countdown' | 'all_voted') => {
         if (!quizId || !quiz) return;
@@ -496,7 +554,7 @@ function AdminDashboard() {
                 </div>
 
                 {error && (
-                    <div style={{
+                    <div className="animate-in" style={{
                         padding: '12px 16px',
                         background: 'rgba(239, 68, 68, 0.15)',
                         border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -506,6 +564,19 @@ function AdminDashboard() {
                         fontSize: '14px',
                     }}>
                         {error}
+                    </div>
+                )}
+                {success && (
+                    <div className="animate-in" style={{
+                        padding: '12px 16px',
+                        background: 'rgba(34, 197, 94, 0.15)',
+                        border: '1px solid rgba(34, 197, 94, 0.3)',
+                        borderRadius: '12px',
+                        color: '#22c55e',
+                        marginBottom: '20px',
+                        fontSize: '14px',
+                    }}>
+                        {success}
                     </div>
                 )}
 
@@ -599,18 +670,43 @@ function AdminDashboard() {
                             </div>
                         </div>
 
-                        {/* Add Person Form */}
+                        {/* Add / Edit Person Form */}
                         <div className="glass-card" style={{ marginBottom: 24 }}>
-                            <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
-                                Add a Person
-                            </h3>
-                            <input
-                                className="input"
-                                value={personName}
-                                onChange={e => setPersonName(e.target.value)}
-                                placeholder="Name (e.g., Anna)"
-                                style={{ marginBottom: 12 }}
-                            />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                                <h3 style={{ fontSize: 16, fontWeight: 600, margin: 0 }}>
+                                    {editingPersonId ? 'Edit Person' : 'Add a Person'}
+                                </h3>
+                                {editingPersonId && (
+                                    <button className="btn btn-secondary" onClick={resetForm} style={{ fontSize: 12, padding: '4px 12px' }}>
+                                        Cancel Edit
+                                    </button>
+                                )}
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                        First Name *
+                                    </label>
+                                    <input
+                                        className="input"
+                                        value={firstName}
+                                        onChange={e => setFirstName(e.target.value)}
+                                        placeholder="e.g., Anna"
+                                    />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '1px' }}>
+                                        Surname
+                                    </label>
+                                    <input
+                                        className="input"
+                                        value={lastName}
+                                        onChange={e => setLastName(e.target.value)}
+                                        placeholder="e.g., Smith"
+                                    />
+                                </div>
+                            </div>
 
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                                 <div>
@@ -725,11 +821,15 @@ function AdminDashboard() {
                             </div>
                             <button
                                 className="btn btn-primary"
-                                style={{ width: '100%' }}
-                                onClick={handleAddPerson}
-                                disabled={!personName.trim() || !caricatureUrl1 || !caricatureUrl2 || (!personWordsEN.length && !personWordsHU.length && !personWordsUA.length && !personWordsRU.length)}
+                                style={{ width: '100%', background: editingPersonId ? 'var(--gold)' : undefined, color: editingPersonId ? '#000' : undefined }}
+                                onClick={handleAddOrUpdatePerson}
+                                disabled={!firstName.trim() || !caricatureUrl1 || !caricatureUrl2 || (!personWordsEN.length && !personWordsHU.length && !personWordsUA.length && !personWordsRU.length)}
                             >
-                                <span className="native-emoji">➕</span> Add Person
+                                {editingPersonId ? (
+                                    <><span className="native-emoji">💾</span> Save Changes</>
+                                ) : (
+                                    <><span className="native-emoji">➕</span> Add Person</>
+                                )}
                             </button>
                         </div>
 
@@ -746,13 +846,23 @@ function AdminDashboard() {
                                                 <span className="person-card-name">
                                                     {index + 1}. {person.name}
                                                 </span>
-                                                <button
-                                                    className="person-card-remove"
-                                                    onClick={() => handleRemovePerson(person.id)}
-                                                    title="Remove"
-                                                >
-                                                    ✕
-                                                </button>
+                                                <div style={{ display: 'flex', gap: 8 }}>
+                                                    <button
+                                                        className="btn btn-secondary"
+                                                        style={{ background: 'rgba(255,255,255,0.1)', padding: '4px 12px', fontSize: 12, border: 'none' }}
+                                                        onClick={() => handleEditPerson(person)}
+                                                        title="Edit"
+                                                    >
+                                                        Edit
+                                                    </button>
+                                                    <button
+                                                        className="person-card-remove"
+                                                        onClick={() => handleRemovePerson(person.id)}
+                                                        title="Remove"
+                                                    >
+                                                        ✕
+                                                    </button>
+                                                </div>
                                             </div>
                                             <div className="admin-person-preview" style={{ padding: '0 16px 16px' }}>
                                                 <div className="admin-thumb-pair">

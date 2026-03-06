@@ -138,7 +138,15 @@ export async function createQuiz(title: string, ownerId: string): Promise<string
     return id;
 }
 
-export async function addPerson(quizId: string, name: string, caricatureUrl1: string, caricatureUrl2: string, words: Record<Language, string[]>) {
+export async function addPerson(
+    quizId: string,
+    name: string,
+    caricatureUrl1: string,
+    caricatureUrl2: string,
+    words: Record<Language, string[]>,
+    firstName?: string,
+    lastName?: string
+) {
     const id = uuidv4();
     const quizRef = dbRef(db, `quizzes/${quizId}`);
     const quizSnapshot = await get(quizRef);
@@ -150,6 +158,8 @@ export async function addPerson(quizId: string, name: string, caricatureUrl1: st
     const person: Person = {
         id,
         name,
+        firstName,
+        lastName,
         caricatureUrl1,
         caricatureUrl2,
         words,
