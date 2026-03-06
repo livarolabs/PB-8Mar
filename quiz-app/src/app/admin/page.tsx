@@ -233,7 +233,11 @@ function AdminDashboard() {
     }, []);
 
     const handleAddPerson = useCallback(async () => {
-        if (!quizId || !personName.trim() || !caricatureUrl1 || !caricatureUrl2) return;
+        const hasWords = personWordsEN.length > 0 || personWordsHU.length > 0 || personWordsUA.length > 0 || personWordsRU.length > 0;
+        if (!quizId || !personName.trim() || !caricatureUrl1 || !caricatureUrl2 || !hasWords) {
+            showError("Please provide at least one word in any language.");
+            return;
+        }
 
         const words: Record<'en' | 'hu' | 'ua' | 'ru', string[]> = {
             hu: personWordsHU,
@@ -723,7 +727,7 @@ function AdminDashboard() {
                                 className="btn btn-primary"
                                 style={{ width: '100%' }}
                                 onClick={handleAddPerson}
-                                disabled={!personName.trim() || !caricatureUrl1 || !caricatureUrl2}
+                                disabled={!personName.trim() || !caricatureUrl1 || !caricatureUrl2 || (!personWordsEN.length && !personWordsHU.length && !personWordsUA.length && !personWordsRU.length)}
                             >
                                 <span className="native-emoji">➕</span> Add Person
                             </button>
@@ -758,7 +762,24 @@ function AdminDashboard() {
                                                 <div style={{ flex: 1 }}>
                                                     <h4 style={{ fontWeight: 600, color: 'var(--gold)' }}>{person.name}</h4>
                                                     <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Round {index + 1}</p>
+
+                                                    {Object.keys(person.words || {}).length > 0 && (
+                                                        <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                                            {((person.words?.en || person.words?.hu || person.words?.ua || person.words?.ru || [])).map((w, i) => (
+                                                                <span key={i} style={{
+                                                                    fontSize: 10,
+                                                                    background: 'rgba(255,255,255,0.1)',
+                                                                    padding: '2px 6px',
+                                                                    borderRadius: 4,
+                                                                    color: 'var(--pink)'
+                                                                }}>
+                                                                    {w}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
+
                                             </div>
                                         </div>
                                     ))}

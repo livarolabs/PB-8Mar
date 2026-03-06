@@ -534,21 +534,25 @@ export default function PlayerPage() {
                             borderRadius: 16,
                             border: '1px solid rgba(255,255,255,0.1)',
                         }}>
-                            {(currentPerson.words?.[player.language as Language] || []).map((word: string, i: number) => (
-                                <span key={i} style={{
-                                    background: 'linear-gradient(135deg, var(--pink), var(--gold))',
-                                    color: 'white',
-                                    padding: '6px 14px',
-                                    borderRadius: 12,
-                                    fontSize: 16,
-                                    fontWeight: 700,
-                                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
-                                    animation: `fadeInUp 0.4s ease-out ${i * 0.1}s forwards`,
-                                    opacity: 0
-                                }}>
-                                    {word}
-                                </span>
-                            ))}
+                            {((currentPerson.words?.[player.language as Language]?.length ? currentPerson.words[player.language as Language] :
+                                currentPerson.words?.en?.length ? currentPerson.words.en :
+                                    currentPerson.words?.hu?.length ? currentPerson.words.hu :
+                                        currentPerson.words?.ua?.length ? currentPerson.words.ua :
+                                            currentPerson.words?.ru) || []).map((word: string, i: number) => (
+                                                <span key={i} style={{
+                                                    background: 'linear-gradient(135deg, var(--pink), var(--gold))',
+                                                    color: 'white',
+                                                    padding: '6px 14px',
+                                                    borderRadius: 12,
+                                                    fontSize: 16,
+                                                    fontWeight: 700,
+                                                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                                    animation: `fadeInUp 0.4s ease-out ${i * 0.1}s forwards`,
+                                                    opacity: 0
+                                                }}>
+                                                    {word}
+                                                </span>
+                                            ))}
                         </div>
                     )}
 
