@@ -57,8 +57,21 @@ function HostDashboard() {
         setBaseUrl(window.location.origin);
         if (!quizId) return;
 
-        const unsubscribe = subscribeToQuiz(quizId, (q) => {
-            setQuiz(q);
+        const unsubscribe = subscribeToQuiz(quizId, (q: Quiz | null) => {
+            setQuiz(prev => {
+                if (prev && q) {
+                    const prevRound = prev.rounds[prev.currentRoundIndex];
+                    const newRound = q.rounds[q.currentRoundIndex];
+                    // Detect round or phase transition -> reset voting state
+                    if (
+                        prev.currentRoundIndex !== q.currentRoundIndex ||
+                        prevRound?.status !== newRound?.status
+                    ) {
+                        setVotingEnded(false);
+                    }
+                }
+                return q;
+            });
         });
         return () => unsubscribe();
     }, [quizId]);
@@ -121,6 +134,8 @@ function HostDashboard() {
             // Re-check votes from the latest round object in closure (effectively same as quiz since it depends on it)
             if (round.votingEndsAt && now > round.votingEndsAt) {
                 setVotingEnded(true);
+            } else if (round.votingEndsAt && now <= round.votingEndsAt) {
+                setVotingEnded(false);
             }
         };
         check();

@@ -115,6 +115,8 @@ export default function PlayerPage() {
         const check = () => {
             if (round.votingEndsAt && Date.now() > round.votingEndsAt) {
                 setVotingEnded(true);
+            } else if (round.votingEndsAt && Date.now() <= round.votingEndsAt) {
+                setVotingEnded(false);
             }
         };
         check();
