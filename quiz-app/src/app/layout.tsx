@@ -6,8 +6,6 @@ export const metadata: Metadata = {
   description: "Interactive guess-the-caricature quiz for Women's Day celebrations",
 };
 
-import KostyaMascot from "@/components/KostyaMascot";
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -22,7 +20,6 @@ export default function RootLayout({
       </head>
       <body>
         {children}
-        <KostyaMascot />
       </body>
     </html>
   );

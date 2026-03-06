@@ -33,10 +33,12 @@ export default function PlayerPage() {
     }, [player?.language, selectedLanguage]);
 
     // Shuffle person names for voting (random for each player, but consistent for the round)
-    const shuffledPersonNames = useMemo(() => {
-        if (!quiz || !quiz.persons) return [];
-        return [...quiz.persons].sort(() => Math.random() - 0.5);
-    }, [quiz?.id, quiz?.currentRoundIndex, quiz?.persons]);
+    const [shuffledPersonNames, setShuffledPersonNames] = useState<Person[]>([]);
+
+    useEffect(() => {
+        if (!quiz || !quiz.persons) return;
+        setShuffledPersonNames([...quiz.persons].sort(() => Math.random() - 0.5));
+    }, [quiz?.id, quiz?.currentRoundIndex]);
 
     // Restore player from localStorage
     useEffect(() => {
@@ -602,8 +604,23 @@ export default function PlayerPage() {
                     <div className="player-result">
                         {didVote ? (
                             <>
-                                <div className="player-result-icon">
-                                    {isCorrect ? '🎉' : '😅'}
+                                <div className="player-result-icon" style={isCorrect ? { border: 'none', background: 'transparent', height: 'auto', width: 'auto' } : {}}>
+                                    {isCorrect ? (
+                                        <div className="animate-bounce" style={{ display: 'inline-block' }}>
+                                            <img
+                                                src="/Kostya.png"
+                                                alt="Kostya celebrating"
+                                                style={{
+                                                    width: 120,
+                                                    height: 120,
+                                                    objectFit: 'cover',
+                                                    borderRadius: '50%',
+                                                    border: '4px solid var(--gold)',
+                                                    boxShadow: '0 0 20px rgba(251, 191, 36, 0.4)'
+                                                }}
+                                            />
+                                        </div>
+                                    ) : '😅'}
                                 </div>
                                 <p className="player-result-text">
                                     {isCorrect ? `${t.correct} (+${myVote?.points || 0})` : t.notQuite}
