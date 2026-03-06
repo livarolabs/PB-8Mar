@@ -21,9 +21,15 @@ function WordTagInput({
     const [inputValue, setInputValue] = useState('');
 
     const addWord = (val: string) => {
-        const trimmed = val.trim();
-        if (trimmed && !words.includes(trimmed)) {
-            onChange([...words, trimmed]);
+        const wordsToAdd = val.split(',').map(w => w.trim()).filter(w => w !== '');
+        if (wordsToAdd.length > 0) {
+            const newWords = [...words];
+            wordsToAdd.forEach(w => {
+                if (!newWords.includes(w)) {
+                    newWords.push(w);
+                }
+            });
+            onChange(newWords);
         }
         setInputValue('');
     };
@@ -272,7 +278,11 @@ function AdminDashboard() {
             if (data.ua) setPersonWordsUA(data.ua);
             if (data.ru) setPersonWordsRU(data.ru);
         } catch (err: any) {
-            showError(`Translation failed: ${err.message}`);
+            let msg = `Translation failed: ${err.message}`;
+            if (err.message.includes('not configured')) {
+                msg = "AI Translation failed: DeepSeek API key is not configured in environment variables. If you're on Vercel, add DEEPSEEK_API_KEY to your project settings.";
+            }
+            showError(msg);
         } finally {
             setIsTranslating(false);
         }
