@@ -8,7 +8,7 @@ const ANIMATIONS = [
     'mascot-spin-across'
 ];
 
-export default function KostyaMascot() {
+export default function KostyaMascot({ variant = 'neutral', size = 180 }: { variant?: 'neutral' | 'positive', size?: number }) {
     const [activeAnimation, setActiveAnimation] = useState<string | null>(null);
 
     useEffect(() => {
@@ -38,12 +38,14 @@ export default function KostyaMascot() {
 
     if (!activeAnimation) return null;
 
+    const imgSrc = variant === 'positive' ? '/positive_kostya.png' : '/neutral_kostya.png';
+
     return (
         <div className={`mascot-container ${activeAnimation}`}>
             <img
-                src="/Kostya.png"
+                src={imgSrc}
                 alt="Kostya Mascot"
-                style={{ width: 180, height: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.5))' }}
+                style={{ width: size, height: 'auto', objectFit: 'contain', filter: 'drop-shadow(0 10px 15px rgba(0,0,0,0.5))' }}
             />
         </div>
     );

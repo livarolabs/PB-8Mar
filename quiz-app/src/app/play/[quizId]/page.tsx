@@ -343,7 +343,7 @@ export default function PlayerPage() {
                             <div className="animate-in">
                                 <p style={{ fontSize: 14, marginBottom: 16, color: 'var(--text-secondary)' }}>{t.tutorialStep7}</p>
                                 <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
-                                    <NextImage src="/Kostya.png" alt="Demo" width={140} height={140} priority unoptimized style={{ borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--gold)', boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }} />
+                                    <NextImage src="/neutral_kostya.png" alt="Demo" width={140} height={140} priority unoptimized style={{ borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--gold)', boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }} />
                                 </div>
                                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', width: '100%' }}>
                                     <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 13, padding: '12px 8px' }} onClick={() => handleDemoVote(true)}>{t.tutorialDemoOptionA}</button>
@@ -379,7 +379,7 @@ export default function PlayerPage() {
                         )}
                     </div>
                 </div>
-            </div>
+            </div >
         );
     }
 
@@ -416,7 +416,13 @@ export default function PlayerPage() {
             <div className="player-screen">
                 <div className="animate-in" style={{ paddingTop: 20 }}>
                     <div style={{ textAlign: 'center', marginBottom: 24 }}>
-                        <span style={{ fontSize: 48 }}>🎉</span>
+                        <div className="winner-celebration animate-bounce" style={{ marginBottom: 16 }}>
+                            <img
+                                src="/positive_kostya.png"
+                                alt="Winner celebration"
+                                style={{ width: 140, height: 140, objectFit: 'contain' }}
+                            />
+                        </div>
                         <h2 style={{
                             fontFamily: 'Outfit',
                             fontSize: 24,
@@ -487,9 +493,10 @@ export default function PlayerPage() {
     }
 
     // ── VOTING state (Words / Img1 / Img2) ───────────────────────────
-    if (['voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
-        const pointsText = currentRound.status === 'voting_1' ? t.votePoints2 :
-            t.votePoints1;
+    if (['voting_words', 'voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
+        const pointsText = currentRound.status === 'voting_words' ? t.votePoints3 :
+            currentRound.status === 'voting_1' ? t.votePoints2 :
+                t.votePoints1;
 
         return (
             <div className="player-screen">
@@ -514,7 +521,35 @@ export default function PlayerPage() {
                         </span>
                     </div>
 
-
+                    {currentRound.status === 'voting_words' && (
+                        <div style={{
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: 10,
+                            justifyContent: 'center',
+                            marginBottom: 20,
+                            padding: '16px',
+                            background: 'rgba(255,255,255,0.05)',
+                            borderRadius: 16,
+                            border: '1px solid rgba(255,255,255,0.1)',
+                        }}>
+                            {(currentPerson.words?.[player.language as Language] || []).map((word: string, i: number) => (
+                                <span key={i} style={{
+                                    background: 'linear-gradient(135deg, var(--pink), var(--gold))',
+                                    color: 'white',
+                                    padding: '6px 14px',
+                                    borderRadius: 12,
+                                    fontSize: 16,
+                                    fontWeight: 700,
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                                    animation: `fadeInUp 0.4s ease-out ${i * 0.1}s forwards`,
+                                    opacity: 0
+                                }}>
+                                    {word}
+                                </span>
+                            ))}
+                        </div>
+                    )}
 
                     {!votedThisRound && !votingEnded && currentRound.votingEndsAt && (
                         <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
@@ -604,7 +639,7 @@ export default function PlayerPage() {
                         </div>
                     )}
                 </div>
-            </div>
+            </div >
         );
     }
 
@@ -631,11 +666,11 @@ export default function PlayerPage() {
                     <div className="player-result">
                         {didVote ? (
                             <>
-                                <div className="player-result-icon" style={isCorrect ? { border: 'none', background: 'transparent', height: 'auto', width: 'auto' } : {}}>
+                                <div className="player-result-icon" style={{ border: 'none', background: 'transparent', height: 'auto', width: 'auto' }}>
                                     {isCorrect ? (
                                         <div className="animate-bounce" style={{ display: 'inline-block' }}>
                                             <img
-                                                src="/Kostya.png"
+                                                src="/positive_kostya.png"
                                                 alt="Kostya celebrating"
                                                 style={{
                                                     width: 120,
@@ -647,7 +682,22 @@ export default function PlayerPage() {
                                                 }}
                                             />
                                         </div>
-                                    ) : '😅'}
+                                    ) : (
+                                        <div style={{ display: 'inline-block' }}>
+                                            <img
+                                                src="/neutral_kostya.png"
+                                                alt="Kostya neutral"
+                                                style={{
+                                                    width: 100,
+                                                    height: 100,
+                                                    objectFit: 'cover',
+                                                    borderRadius: '50%',
+                                                    border: '4px solid rgba(255,255,255,0.2)',
+                                                    opacity: 0.8
+                                                }}
+                                            />
+                                        </div>
+                                    )}
                                 </div>
                                 <p className="player-result-text">
                                     {isCorrect ? `${t.correct} (+${myVote?.points || 0})` : t.notQuite}

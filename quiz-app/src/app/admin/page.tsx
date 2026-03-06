@@ -20,6 +20,10 @@ function AdminDashboard() {
     const [personName, setPersonName] = useState('');
     const [caricatureUrl1, setCaricatureUrl1] = useState('');
     const [caricatureUrl2, setCaricatureUrl2] = useState('');
+    const [personWordsHU, setPersonWordsHU] = useState('');
+    const [personWordsEN, setPersonWordsEN] = useState('');
+    const [personWordsUA, setPersonWordsUA] = useState('');
+    const [personWordsRU, setPersonWordsRU] = useState('');
     const [uploading, setUploading] = useState<'c1' | 'c2' | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -118,17 +122,28 @@ function AdminDashboard() {
     const handleAddPerson = useCallback(async () => {
         if (!quizId || !personName.trim() || !caricatureUrl1 || !caricatureUrl2) return;
 
+        const words: Record<'en' | 'hu' | 'ua' | 'ru', string[]> = {
+            hu: personWordsHU.split(',').map(s => s.trim()).filter(Boolean),
+            en: personWordsEN.split(',').map(s => s.trim()).filter(Boolean),
+            ua: personWordsUA.split(',').map(s => s.trim()).filter(Boolean),
+            ru: personWordsRU.split(',').map(s => s.trim()).filter(Boolean),
+        };
+
         try {
-            await addPerson(quizId, personName.trim(), caricatureUrl1, caricatureUrl2);
+            await addPerson(quizId, personName.trim(), caricatureUrl1, caricatureUrl2, words);
             setPersonName('');
             setCaricatureUrl1('');
             setCaricatureUrl2('');
+            setPersonWordsHU('');
+            setPersonWordsEN('');
+            setPersonWordsUA('');
+            setPersonWordsRU('');
             if (c1InputRef.current) c1InputRef.current.value = '';
             if (c2InputRef.current) c2InputRef.current.value = '';
         } catch (err: any) {
             showError(`Failed to add person: ${err.message}`);
         }
-    }, [quizId, personName, caricatureUrl1, caricatureUrl2]);
+    }, [quizId, personName, caricatureUrl1, caricatureUrl2, personWordsHU, personWordsEN, personWordsUA, personWordsRU]);
 
     const handleRemovePerson = useCallback(async (personId: string) => {
         if (!quizId) return;
@@ -431,8 +446,27 @@ function AdminDashboard() {
                                 value={personName}
                                 onChange={e => setPersonName(e.target.value)}
                                 placeholder="Name (e.g., Anna)"
-                                style={{ marginBottom: 16 }}
+                                style={{ marginBottom: 12 }}
                             />
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Hungarian Words</label>
+                                    <input className="input" value={personWordsHU} onChange={e => setPersonWordsHU(e.target.value)} placeholder="szó1, szó2..." style={{ fontSize: 13 }} />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>English Words</label>
+                                    <input className="input" value={personWordsEN} onChange={e => setPersonWordsEN(e.target.value)} placeholder="word1, word2..." style={{ fontSize: 13 }} />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Ukrainian Words</label>
+                                    <input className="input" value={personWordsUA} onChange={e => setPersonWordsUA(e.target.value)} placeholder="слово1, слово2..." style={{ fontSize: 13 }} />
+                                </div>
+                                <div>
+                                    <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Russian Words</label>
+                                    <input className="input" value={personWordsRU} onChange={e => setPersonWordsRU(e.target.value)} placeholder="слово1, слово2..." style={{ fontSize: 13 }} />
+                                </div>
+                            </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                                 {/* Caricature 1 Upload */}
                                 <div>
@@ -599,6 +633,12 @@ function AdminDashboard() {
                         </div>
 
                         <div className="glass-card" style={{ width: '100%', maxWidth: 500, margin: '0 auto' }}>
+                            {quiz.status === 'finished' && (
+                                <div style={{ textAlign: 'center', marginBottom: 20 }} className="animate-bounce">
+                                    <img src="/positive_kostya.png" alt="Kostya celebrating" style={{ width: 100, height: 100, objectFit: 'contain' }} />
+                                    <p style={{ fontWeight: 800, color: 'var(--gold)', marginTop: 8 }}>Game Over! Final Scores:</p>
+                                </div>
+                            )}
                             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 12 }}>Players ({quiz.players.length})</h3>
                             <div style={{ display: 'grid', gap: 8 }}>
                                 {quiz.players.map(p => (

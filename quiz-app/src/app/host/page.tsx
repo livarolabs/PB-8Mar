@@ -264,6 +264,9 @@ function HostDashboard() {
         return (
             <div className="host-screen">
                 {showConfetti && <Confetti />}
+                <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 24 }} className="animate-bounce">
+                    <img src="/positive_kostya.png" alt="Kostya celebrating" style={{ width: 150, height: 150, objectFit: 'contain' }} />
+                </div>
                 <h1 style={{
                     fontFamily: 'Outfit',
                     fontSize: 42,
@@ -394,19 +397,24 @@ function HostDashboard() {
     }
 
     // ── VOTING state (Words / Img1 / Img2) ───────────────────────────
-    if (['voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
+    if (['voting_words', 'voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
         const votesCount = currentRound.votes ? Object.keys(currentRound.votes).length : 0;
-        const phaseTitle = currentRound.status === 'voting_1' ? '1st Caricature — Who is this? 🧐' :
-            '2nd Caricature — Last chance! ⏳';
 
-        const phasePoints = currentRound.status === 'voting_1' ? '2 points' :
-            '1 point';
+        const phaseTitle = currentRound.status === 'voting_words' ? 'Phase 1: Descriptive Words 📝' :
+            currentRound.status === 'voting_1' ? 'Phase 2: 1st Caricature 🧐' :
+                'Phase 3: 2nd Caricature — Last chance! ⏳';
 
-        const nextButtonText = currentRound.status === 'voting_1' ? '👀 Reveal 2nd Caricature' :
-            '✨ Reveal The Name!';
+        const phasePoints = currentRound.status === 'voting_words' ? '3 points' :
+            currentRound.status === 'voting_1' ? '2 points' :
+                '1 point';
 
-        const skipButtonText = currentRound.status === 'voting_1' ? '⏭️ Skip and Reveal 2nd Pic' :
-            '⏭️ Skip and Reveal Name';
+        const nextButtonText = currentRound.status === 'voting_words' ? '🎨 Reveal 1st Caricature' :
+            currentRound.status === 'voting_1' ? '👀 Reveal 2nd Caricature' :
+                '✨ Reveal The Name!';
+
+        const skipButtonText = currentRound.status === 'voting_words' ? '⏭️ Skip and Reveal Pic 1' :
+            currentRound.status === 'voting_1' ? '⏭️ Skip and Reveal Pic 2' :
+                '⏭️ Skip and Reveal Name';
 
         const isLastVotingPhase = currentRound.status === 'voting_2';
 
@@ -426,22 +434,44 @@ function HostDashboard() {
                     </div>
                 </div>
 
-                <h2 style={{
-                    fontFamily: 'Outfit',
-                    fontSize: 28,
-                    fontWeight: 700,
-                    color: 'var(--text-secondary)',
-                    marginBottom: 8,
-                }}>
-                    {phaseTitle}
-                </h2>
+                <p style={{ color: 'var(--gold)', fontWeight: 700, marginBottom: 24, fontSize: 18 }}>
+                    Guess correctly for <span style={{ color: 'var(--pink)', fontSize: 24 }}>{phasePoints}</span>
+                </p>
+
+                {currentRound.status === 'voting_words' && (
+                    <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 20,
+                        justifyContent: 'center',
+                        maxWidth: 800,
+                        margin: '0 auto 40px',
+                        padding: 20
+                    }}>
+                        {(currentPerson.words?.hu || []).map((word, i) => (
+                            <div key={i} className="glass-card" style={{
+                                padding: '16px 32px',
+                                fontSize: 32,
+                                fontWeight: 800,
+                                background: 'linear-gradient(135deg, var(--pink), var(--gold))',
+                                color: 'white',
+                                borderRadius: 50,
+                                boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+                                animation: `zoomReveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.15}s forwards`,
+                                opacity: 0,
+                                transform: 'scale(0)'
+                            }}>
+                                {word}
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {currentRound.status === 'voting_1' && (
                     <div className="host-caricature">
                         <img src={currentPerson.caricatureUrl1} alt="Caricature 1" />
                     </div>
-                )
-                }
+                )}
 
                 {
                     currentRound.status === 'voting_2' && (

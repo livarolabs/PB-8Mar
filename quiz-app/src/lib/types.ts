@@ -5,6 +5,7 @@ export interface Person {
   name: string;
   caricatureUrl1: string;
   caricatureUrl2: string;
+  words: Record<Language, string[]>;
   orderIndex: number;
 }
 
@@ -17,7 +18,7 @@ export interface Vote {
 
 export interface Round {
   personId: string;
-  status: 'pending' | 'voting_1' | 'voting_2' | 'revealed';
+  status: 'pending' | 'voting_words' | 'voting_1' | 'voting_2' | 'revealed';
   votingEndsAt: number | null;
   revealingEndsAt?: number | null; // Keep for backward compatibility if needed, but we'll use votingEndsAt for all phases
   votes: Record<string, Vote> | null;

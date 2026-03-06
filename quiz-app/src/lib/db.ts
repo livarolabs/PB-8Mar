@@ -138,7 +138,7 @@ export async function createQuiz(title: string, ownerId: string): Promise<string
     return id;
 }
 
-export async function addPerson(quizId: string, name: string, caricatureUrl1: string, caricatureUrl2: string) {
+export async function addPerson(quizId: string, name: string, caricatureUrl1: string, caricatureUrl2: string, words: Record<Language, string[]>) {
     const id = uuidv4();
     const quizRef = dbRef(db, `quizzes/${quizId}`);
     const quizSnapshot = await get(quizRef);
@@ -152,6 +152,7 @@ export async function addPerson(quizId: string, name: string, caricatureUrl1: st
         name,
         caricatureUrl1,
         caricatureUrl2,
+        words,
         orderIndex: persons.length
     };
 
@@ -229,7 +230,7 @@ export async function startRound(quizId: string) {
     const duration = (quiz.settings?.votingDuration || 15) * 1000;
 
     await update(child(quizRef, `rounds/${idx}`), {
-        status: 'voting_1',
+        status: 'voting_words',
         votingEndsAt: isWaitForAll ? null : Date.now() + duration,
         votes: {}
     });
@@ -255,7 +256,8 @@ export async function advancePhase(quizId: string) {
     const duration = (quiz.settings?.votingDuration || 15) * 1000;
 
     let nextStatus = '';
-    if (currentRound.status === 'voting_1') nextStatus = 'voting_2';
+    if (currentRound.status === 'voting_words') nextStatus = 'voting_1';
+    else if (currentRound.status === 'voting_1') nextStatus = 'voting_2';
     else return;
 
     await update(child(quizRef, `rounds/${idx}`), {
@@ -439,16 +441,15 @@ export async function submitVote(quizId: string, playerId: string, guessedPerson
 
         const idx = quiz.currentRoundIndex || 0;
         const round = quiz.rounds && quiz.rounds[idx];
-
         if (!round) return;
-        if (!['voting_1', 'voting_2'].includes(round.status)) return;
+        if (!['voting_words', 'voting_1', 'voting_2'].includes(round.status)) return;
         if (round.votingEndsAt && Date.now() > round.votingEndsAt) return;
-
         // Check if already voted
         if (round.votes && round.votes[playerId]) return;
 
         let points = 0;
-        if (round.status === 'voting_1') points = 2;
+        if (round.status === 'voting_words') points = 3;
+        else if (round.status === 'voting_1') points = 2;
         else if (round.status === 'voting_2') points = 1;
 
         const vote: Vote = {
