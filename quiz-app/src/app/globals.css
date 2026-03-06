@@ -829,6 +829,17 @@ body {
   background-clip: text;
 }
 
+.native-emoji {
+  -webkit-text-fill-color: initial !important;
+  -webkit-background-clip: border-box !important;
+  background-clip: border-box !important;
+  background-image: none !important;
+  color: initial !important;
+  display: inline-block !important;
+  vertical-align: middle !important;
+  font-family: "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif !important;
+}
+
 .animate-in {
   animation: slide-up 0.4s ease-out;
 }

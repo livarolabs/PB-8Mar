@@ -228,7 +228,7 @@ export default function PlayerPage() {
             <div className="player-screen">
                 <div className="player-join animate-in">
                     <div style={{ marginBottom: 16 }}>
-                        <span style={{ fontSize: 48 }}>🌍</span>
+                        <span className="native-emoji" style={{ fontSize: 48 }}>🌍</span>
                     </div>
                     <h1 className="player-join-title">{t.welcomeTitle}</h1>
 
@@ -266,7 +266,7 @@ export default function PlayerPage() {
                             onClick={handleJoin}
                             disabled={!nickname.trim() || joining}
                         >
-                            {joining ? t.joining : t.joinButton}
+                            {joining ? t.joining : <span className="native-emoji-wrapper">{t.joinButton}</span>}
                         </button>
                         {joinError && (
                             <p style={{
@@ -278,7 +278,7 @@ export default function PlayerPage() {
                                 background: 'rgba(236, 72, 153, 0.1)',
                                 borderRadius: 8,
                             }}>
-                                ⚠️ {joinError}
+                                <span className="native-emoji">⚠️</span> {joinError}
                             </p>
                         )}
                     </div>
@@ -299,43 +299,43 @@ export default function PlayerPage() {
                     <div className="glass-card" style={{ padding: 24, minHeight: 350, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                         {tutorialStep === 0 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🌺</span>
+                                <span className="native-emoji" style={{ fontSize: 64 }}>🌺</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep1}</p>
                             </div>
                         )}
                         {tutorialStep === 1 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🕵️‍♂️</span>
+                                <span className="native-emoji" style={{ fontSize: 64 }}>🕵️‍♂️</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep2}</p>
                             </div>
                         )}
                         {tutorialStep === 2 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🤖</span>
+                                <span className="native-emoji" style={{ fontSize: 64 }}>🤖</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep3}</p>
                             </div>
                         )}
                         {tutorialStep === 3 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🎨</span>
+                                <span className="native-emoji" style={{ fontSize: 64 }}>🎨</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep4}</p>
                             </div>
                         )}
                         {tutorialStep === 4 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>✨</span>
+                                <span className="native-emoji" style={{ fontSize: 64 }}>✨</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep5}</p>
                             </div>
                         )}
                         {tutorialStep === 5 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🏆</span>
+                                <span className="native-emoji" style={{ fontSize: 64 }}>🏆</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep6}</p>
                             </div>
                         )}
                         {tutorialStep === 6 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🎮</span>
+                                <span className="native-emoji" style={{ fontSize: 64 }}>🎮</span>
                                 <p style={{ fontSize: 18, marginTop: 24, fontWeight: 600 }}>{t.tutorialStep7}</p>
                             </div>
                         )}
@@ -351,14 +351,14 @@ export default function PlayerPage() {
                                 </div>
                                 {demoVoted && (
                                     <p className="animate-in" style={{ marginTop: 12, color: 'var(--gold)', fontWeight: 700, fontSize: 14 }}>
-                                        {demoScore > 0 ? t.tutorialDemoCorrect : t.tutorialDemoWrong}
+                                        <span className="native-emoji-wrapper">{demoScore > 0 ? t.tutorialDemoCorrect : t.tutorialDemoWrong}</span>
                                     </p>
                                 )}
                             </div>
                         )}
                         {tutorialStep === 8 && (
                             <div className="animate-in">
-                                <span style={{ fontSize: 64 }}>🚀</span>
+                                <span className="native-emoji" style={{ fontSize: 64 }}>🚀</span>
                                 <h3 style={{ fontSize: 22, marginTop: 20, fontWeight: 800 }}>{t.tutorialComplete}</h3>
                                 <p style={{ color: 'var(--text-secondary)', marginTop: 12 }}>{t.tutorialCompleteDesc}</p>
                             </div>
@@ -388,7 +388,7 @@ export default function PlayerPage() {
         return (
             <div className="player-screen">
                 <div className="waiting-state">
-                    <span style={{ fontSize: 48 }}>⏳</span>
+                    <span className="native-emoji" style={{ fontSize: 48 }}>⏳</span>
                     <h2 style={{ fontFamily: 'Outfit', fontSize: 22, fontWeight: 700 }}>
                         {t.hi}, {player.displayName}!
                     </h2>
@@ -465,7 +465,7 @@ export default function PlayerPage() {
         return (
             <div className="player-screen">
                 <div className="waiting-state">
-                    <span style={{ fontSize: 48 }}>🎯</span>
+                    <span className="native-emoji" style={{ fontSize: 48 }}>🎯</span>
                     <h2 style={{ fontFamily: 'Outfit', fontSize: 20, fontWeight: 700 }}>
                         {t.round} {quiz.currentRoundIndex + 1} {t.of} {quiz.rounds.length}
                     </h2>
@@ -517,7 +517,7 @@ export default function PlayerPage() {
 
                     <div style={{ textAlign: 'center', marginBottom: 16 }}>
                         <span className="host-badge" style={{ background: 'var(--gold)', color: '#000', fontSize: 11 }}>
-                            {pointsText}
+                            <span className="native-emoji-wrapper">{pointsText}</span>
                         </span>
                     </div>
 
@@ -561,7 +561,7 @@ export default function PlayerPage() {
 
                     {votedThisRound ? (
                         <div className="vote-locked animate-in">
-                            <p>✅ {t.voteLocked}</p>
+                            <p><span className="native-emoji">✅</span> {t.voteLocked}</p>
                             <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 4 }}>
                                 {t.waitingForReveal}
                             </p>
@@ -700,7 +700,7 @@ export default function PlayerPage() {
                                     )}
                                 </div>
                                 <p className="player-result-text">
-                                    {isCorrect ? `${t.correct} (+${myVote?.points || 0})` : t.notQuite}
+                                    <span className="native-emoji-wrapper">{isCorrect ? `${t.correct} (+${myVote?.points || 0})` : t.notQuite}</span>
                                 </p>
                                 <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
                                     {t.itWas} <strong className="text-gradient">{currentPerson.name}</strong>
@@ -708,7 +708,7 @@ export default function PlayerPage() {
                             </>
                         ) : (
                             <>
-                                <div className="player-result-icon">😶</div>
+                                <div className="player-result-icon"><span className="native-emoji">😶</span></div>
                                 <p className="player-result-text">{t.noVote}</p>
                                 <p style={{ color: 'var(--text-secondary)', marginBottom: 8 }}>
                                     {t.itWas} <strong className="text-gradient">{currentPerson.name}</strong>

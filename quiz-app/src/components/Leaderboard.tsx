@@ -29,7 +29,7 @@ export default function Leaderboard({ players, currentPlayerId, showAll = true }
 
     return (
         <div className="leaderboard">
-            <h2 className="leaderboard-title">🏆 Leaderboard</h2>
+            <h2 className="leaderboard-title"><span className="native-emoji">🏆</span> Leaderboard</h2>
             <div className="leaderboard-list">
                 {displayPlayers.map((player, index) => {
                     const isCurrentPlayer = player.id === currentPlayerId;
@@ -44,7 +44,7 @@ export default function Leaderboard({ players, currentPlayerId, showAll = true }
                         >
                             <div className="leaderboard-rank">
                                 {isPodium ? (
-                                    <span className="leaderboard-medal">{MEDALS[index]}</span>
+                                    <span className="leaderboard-medal native-emoji">{MEDALS[index]}</span>
                                 ) : (
                                     <span className="leaderboard-rank-number">{rank}</span>
                                 )}

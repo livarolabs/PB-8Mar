@@ -27,6 +27,7 @@ function AdminDashboard() {
     const [uploading, setUploading] = useState<'c1' | 'c2' | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [isTranslating, setIsTranslating] = useState(false);
 
     const c1InputRef = useRef<HTMLInputElement>(null);
     const c2InputRef = useRef<HTMLInputElement>(null);
@@ -145,6 +146,31 @@ function AdminDashboard() {
         }
     }, [quizId, personName, caricatureUrl1, caricatureUrl2, personWordsHU, personWordsEN, personWordsUA, personWordsRU]);
 
+    const handleTranslate = useCallback(async () => {
+        if (!personWordsEN.trim()) return;
+
+        setIsTranslating(true);
+        try {
+            const wordsArray = personWordsEN.split(',').map(s => s.trim()).filter(Boolean);
+            const res = await fetch('/api/translate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ words: wordsArray })
+            });
+
+            if (!res.ok) throw new Error('Translation request failed');
+
+            const data = await res.json();
+            if (data.hu) setPersonWordsHU(data.hu.join(', '));
+            if (data.ua) setPersonWordsUA(data.ua.join(', '));
+            if (data.ru) setPersonWordsRU(data.ru.join(', '));
+        } catch (err: any) {
+            showError(`Translation failed: ${err.message}`);
+        } finally {
+            setIsTranslating(false);
+        }
+    }, [personWordsEN]);
+
     const handleRemovePerson = useCallback(async (personId: string) => {
         if (!quizId) return;
         try {
@@ -215,7 +241,7 @@ function AdminDashboard() {
             <div className="page-container">
                 <div className="animate-in" style={{ textAlign: 'center', marginTop: '10vh' }}>
                     <div style={{ marginBottom: 24 }}>
-                        <span style={{ fontSize: 64 }}>💐</span>
+                        <span className="native-emoji" style={{ fontSize: 64 }}>💐</span>
                     </div>
                     <h1 className="page-title">Admin Dashboard</h1>
                     <p className="page-subtitle">Please sign in with Google to manage your quizzes</p>
@@ -237,7 +263,7 @@ function AdminDashboard() {
                 <div className="animate-in">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
                         <div>
-                            <h1 className="page-title" style={{ marginBottom: 4 }}>👑 Quiz Management</h1>
+                            <h1 className="page-title" style={{ marginBottom: 4 }}><span className="native-emoji">👑</span> Quiz Management</h1>
                             <p style={{ color: 'var(--text-secondary)' }}>Welcome back, <span className="text-gradient" style={{ fontWeight: 700 }}>{user.displayName}</span></p>
                         </div>
                         <button className="btn btn-secondary" onClick={handleLogout} style={{ fontSize: 13 }}>
@@ -329,8 +355,23 @@ function AdminDashboard() {
                         Logout
                     </button>
                 </div>
-                <h1 className="page-title">👑 {quiz.title}</h1>
-                <p className="page-subtitle">Configure rounds and manage publishing</p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                    <div>
+                        <h1 className="page-title" style={{ marginBottom: 4 }}><span className="native-emoji">👑</span> {quiz.title}</h1>
+                        <p className="page-subtitle" style={{ marginBottom: 0 }}>Configure rounds and manage publishing</p>
+                    </div>
+                    {quiz.status === 'draft' && (
+                        <button
+                            className="btn btn-primary animate-in"
+                            style={{ height: 44, padding: '0 24px' }}
+                            onClick={handlePublish}
+                            disabled={quiz.persons.length === 0}
+                            title={quiz.persons.length === 0 ? "Add at least one round to publish" : ""}
+                        >
+                            <span className="native-emoji">🚀</span> Publish Quiz
+                        </button>
+                    )}
+                </div>
 
                 {error && (
                     <div style={{
@@ -366,7 +407,7 @@ function AdminDashboard() {
                         {/* Quiz Settings */}
                         <div className="glass-card" style={{ marginBottom: 24 }}>
                             <h3 style={{ fontSize: 16, fontWeight: 600, marginBottom: 16 }}>
-                                Quiz Settings ⚙️
+                                Quiz Settings <span className="native-emoji">⚙️</span>
                             </h3>
 
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -387,14 +428,14 @@ function AdminDashboard() {
                                             style={{ flex: 1, height: 36, fontSize: 13, border: 'none', borderRadius: 8 }}
                                             onClick={() => handleUpdateSettings(quiz.settings?.votingDuration || 15, 'countdown')}
                                         >
-                                            ⏱️ Countdown
+                                            <span className="native-emoji">⏱️</span> Countdown
                                         </button>
                                         <button
                                             className={`btn ${quiz.settings?.votingMode === 'all_voted' ? 'btn-primary' : ''}`}
                                             style={{ flex: 1, height: 36, fontSize: 13, border: 'none', borderRadius: 8 }}
                                             onClick={() => handleUpdateSettings(quiz.settings?.votingDuration || 15, 'all_voted')}
                                         >
-                                            🤝 Wait for All
+                                            <span className="native-emoji">🤝</span> Wait for All
                                         </button>
                                     </div>
                                 </div>
@@ -455,7 +496,17 @@ function AdminDashboard() {
                                     <input className="input" value={personWordsHU} onChange={e => setPersonWordsHU(e.target.value)} placeholder="szó1, szó2..." style={{ fontSize: 13 }} />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>English Words</label>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                        <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>English Words</label>
+                                        <button
+                                            className="btn btn-secondary"
+                                            style={{ fontSize: 9, padding: '2px 8px', height: 'auto' }}
+                                            onClick={handleTranslate}
+                                            disabled={isTranslating || !personWordsEN.trim()}
+                                        >
+                                            {isTranslating ? '⌛ Translating...' : <><span className="native-emoji">✨</span> Auto-Translate</>}
+                                        </button>
+                                    </div>
                                     <input className="input" value={personWordsEN} onChange={e => setPersonWordsEN(e.target.value)} placeholder="word1, word2..." style={{ fontSize: 13 }} />
                                 </div>
                                 <div>
@@ -476,17 +527,17 @@ function AdminDashboard() {
                                     <div
                                         className={`upload-zone ${caricatureUrl1 ? 'has-image' : ''}`}
                                         onClick={() => c1InputRef.current?.click()}
-                                        style={{ aspectRatio: '3/4' }}
+                                        style={{ aspectRatio: '16/9', maxHeight: '140px' }}
                                     >
                                         {caricatureUrl1 ? (
-                                            <img src={caricatureUrl1} alt="Caricature 1" />
+                                            <img src={caricatureUrl1} alt="Caricature 1" style={{ objectFit: 'contain' }} />
                                         ) : uploading === 'c1' ? (
                                             <div className="waiting-dots"><span></span><span></span><span></span></div>
                                         ) : (
-                                            <>
-                                                <span className="upload-icon">🎨</span>
-                                                <span className="upload-text">Drop or click</span>
-                                            </>
+                                            <div style={{ transform: 'scale(0.8)' }}>
+                                                <span className="upload-icon native-emoji">🎨</span>
+                                                <span className="upload-text">Voting Img</span>
+                                            </div>
                                         )}
                                     </div>
                                     <input
@@ -509,17 +560,17 @@ function AdminDashboard() {
                                     <div
                                         className={`upload-zone ${caricatureUrl2 ? 'has-image' : ''}`}
                                         onClick={() => c2InputRef.current?.click()}
-                                        style={{ aspectRatio: '3/4' }}
+                                        style={{ aspectRatio: '16/9', maxHeight: '140px' }}
                                     >
                                         {caricatureUrl2 ? (
-                                            <img src={caricatureUrl2} alt="Caricature 2" />
+                                            <img src={caricatureUrl2} alt="Caricature 2" style={{ objectFit: 'contain' }} />
                                         ) : uploading === 'c2' ? (
                                             <div className="waiting-dots"><span></span><span></span><span></span></div>
                                         ) : (
-                                            <>
-                                                <span className="upload-icon">✨</span>
-                                                <span className="upload-text">Drop or click</span>
-                                            </>
+                                            <div style={{ transform: 'scale(0.8)' }}>
+                                                <span className="upload-icon native-emoji">✨</span>
+                                                <span className="upload-text">Reveal Img</span>
+                                            </div>
                                         )}
                                     </div>
                                     <input
@@ -540,7 +591,7 @@ function AdminDashboard() {
                                 onClick={handleAddPerson}
                                 disabled={!personName.trim() || !caricatureUrl1 || !caricatureUrl2}
                             >
-                                ➕ Add Person
+                                <span className="native-emoji">➕</span> Add Person
                             </button>
                         </div>
 
@@ -581,16 +632,7 @@ function AdminDashboard() {
                             </div>
                         )}
 
-                        {/* Publish */}
-                        {quiz.persons.length >= 2 && (
-                            <button
-                                className="btn btn-primary btn-large"
-                                style={{ width: '100%' }}
-                                onClick={handlePublish}
-                            >
-                                🚀 Publish Quiz ({quiz.persons.length} rounds)
-                            </button>
-                        )}
+
                         {quiz.persons.length < 2 && quiz.persons.length > 0 && (
                             <p style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 14, marginTop: 8 }}>
                                 Add at least 2 persons to publish
@@ -604,7 +646,7 @@ function AdminDashboard() {
                     <div style={{ textAlign: 'center' }}>
                         <div className="glass-card" style={{ display: 'inline-block', marginBottom: 24, width: '100%', maxWidth: 500 }}>
                             <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>
-                                ✅ Quiz is Live!
+                                <span className="native-emoji">✅</span> Quiz is Live!
                             </h2>
                             <p style={{ color: 'var(--text-secondary)', fontSize: 14, marginBottom: 24 }}>
                                 {quiz.persons.length} rounds • {quiz.players.length} players joined
@@ -614,7 +656,7 @@ function AdminDashboard() {
                             )}
                             <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
                                 <a href={hostUrl} target="_blank" className="btn btn-primary btn-large">
-                                    🖥️ Open Host Screen
+                                    <span className="native-emoji">🖥️</span> Open Host Screen
                                 </a>
                                 <button
                                     className="btn btn-secondary"
@@ -624,7 +666,7 @@ function AdminDashboard() {
                                         }
                                     }}
                                 >
-                                    📋 Copy Join Link
+                                    <span className="native-emoji">📋</span> Copy Join Link
                                 </button>
                                 <button className="btn btn-danger" onClick={() => handleDeleteQuiz()} style={{ marginTop: 12, fontSize: 12 }}>
                                     Delete Quiz Data
@@ -652,7 +694,7 @@ function AdminDashboard() {
                                         border: '1px solid var(--border-color)'
                                     }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                                            <span>{p.isReady ? '✅' : '⌛'}</span>
+                                            <span>{p.isReady ? <span className="native-emoji">✅</span> : <span className="native-emoji">⌛</span>}</span>
                                             <span style={{ fontWeight: 600 }}>{p.displayName}</span>
                                         </div>
                                         <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>{p.score} pts</span>

@@ -274,7 +274,7 @@ function HostDashboard() {
                     textAlign: 'center',
                     marginBottom: 32,
                 }}>
-                    🎉 <span className="text-gradient">Final Results</span> 🎉
+                    <span className="native-emoji">🎉</span> <span className="text-gradient">Final Results</span> <span className="native-emoji">🎉</span>
                 </h1>
                 <Leaderboard players={quiz.players} showAll />
                 <div className="host-controls">
@@ -297,7 +297,7 @@ function HostDashboard() {
                     textAlign: 'center',
                     marginBottom: 8,
                 }}>
-                    💐 <span className="text-gradient">{quiz.title}</span>
+                    <span className="native-emoji">💐</span> <span className="text-gradient">{quiz.title}</span>
                 </h1>
                 <p style={{
                     color: 'var(--text-secondary)',
@@ -329,7 +329,7 @@ function HostDashboard() {
                             textAlign: 'center',
                             position: 'relative'
                         }}>
-                            <div style={{ fontSize: 32, marginBottom: 8 }}>{p.isReady ? '👤' : '⌛'}</div>
+                            <div style={{ fontSize: 32, marginBottom: 8 }}>{p.isReady ? <span className="native-emoji">👤</span> : <span className="native-emoji">⌛</span>}</div>
                             <div style={{ fontWeight: 700, fontSize: 16 }}>{p.displayName}</div>
                             <div style={{
                                 fontSize: 10,
@@ -350,13 +350,13 @@ function HostDashboard() {
                         onClick={handleStartRound}
                         disabled={quiz.players.length === 0}
                     >
-                        🎬 Start First Round
+                        <span className="native-emoji">🎬</span> Start First Round
                     </button>
                 </div>
 
                 <div className="host-info-bar">
                     <div className="host-badge">
-                        👥 {quiz.players.length} players
+                        <span className="native-emoji">👥</span> {quiz.players.length} players
                     </div>
                 </div>
             </div>
@@ -381,15 +381,15 @@ function HostDashboard() {
                 </p>
                 <div className="host-controls">
                     <button className="btn btn-primary btn-large" onClick={handleStartRound}>
-                        ▶️ Start Round
+                        <span className="native-emoji">▶️</span> Start Round
                     </button>
                 </div>
                 <div className="host-info-bar">
                     <div className="host-badge">
-                        👥 {quiz.players.length} players
+                        <span className="native-emoji">👥</span> {quiz.players.length} players
                     </div>
                     <div className="host-badge">
-                        🎯 Round {quiz.currentRoundIndex + 1}/{quiz.rounds.length}
+                        <span className="native-emoji">🎯</span> Round {quiz.currentRoundIndex + 1}/{quiz.rounds.length}
                     </div>
                 </div>
             </div>
@@ -400,21 +400,21 @@ function HostDashboard() {
     if (['voting_words', 'voting_1', 'voting_2'].includes(currentRound.status) && currentPerson) {
         const votesCount = currentRound.votes ? Object.keys(currentRound.votes).length : 0;
 
-        const phaseTitle = currentRound.status === 'voting_words' ? 'Phase 1: Descriptive Words 📝' :
-            currentRound.status === 'voting_1' ? 'Phase 2: 1st Caricature 🧐' :
-                'Phase 3: 2nd Caricature — Last chance! ⏳';
+        const phaseTitle = currentRound.status === 'voting_words' ? <><span className="native-emoji">📝</span> Phase 1: Descriptive Words</> :
+            currentRound.status === 'voting_1' ? <><span className="native-emoji">🧐</span> Phase 2: 1st Caricature</> :
+                <><span className="native-emoji">⏳</span> Phase 3: 2nd Caricature — Last chance!</>;
 
         const phasePoints = currentRound.status === 'voting_words' ? '3 points' :
             currentRound.status === 'voting_1' ? '2 points' :
                 '1 point';
 
-        const nextButtonText = currentRound.status === 'voting_words' ? '🎨 Reveal 1st Caricature' :
-            currentRound.status === 'voting_1' ? '👀 Reveal 2nd Caricature' :
-                '✨ Reveal The Name!';
+        const nextButtonText = currentRound.status === 'voting_words' ? <><span className="native-emoji">🎨</span> Reveal 1st Caricature</> :
+            currentRound.status === 'voting_1' ? <><span className="native-emoji">👀</span> Reveal 2nd Caricature</> :
+                <><span className="native-emoji">✨</span> Reveal The Name!</>;
 
-        const skipButtonText = currentRound.status === 'voting_words' ? '⏭️ Skip and Reveal Pic 1' :
-            currentRound.status === 'voting_1' ? '⏭️ Skip and Reveal Pic 2' :
-                '⏭️ Skip and Reveal Name';
+        const skipButtonText = currentRound.status === 'voting_words' ? <><span className="native-emoji">⏭️</span> Skip and Reveal Pic 1</> :
+            currentRound.status === 'voting_1' ? <><span className="native-emoji">⏭️</span> Skip and Reveal Pic 2</> :
+                <><span className="native-emoji">⏭️</span> Skip and Reveal Name</>;
 
         const isLastVotingPhase = currentRound.status === 'voting_2';
 
@@ -430,7 +430,7 @@ function HostDashboard() {
                         🎯 Round {quiz.currentRoundIndex + 1}/{quiz.rounds.length}
                     </div>
                     <div className="host-badge">
-                        ✅ {votesCount} votes
+                        <span className="native-emoji">✅</span> {votesCount} votes
                     </div>
                 </div>
 
@@ -618,15 +618,15 @@ function HostDashboard() {
                 <div className="host-controls">
                     {isLastRound ? (
                         <button className="btn btn-primary btn-large" onClick={handleFinish}>
-                            🏆 Show Final Results
+                            <span className="native-emoji">🏆</span> Show Final Results
                         </button>
                     ) : (
                         <button className="btn btn-primary btn-large" onClick={handleNext}>
-                            ➡️ Next Round
+                            <span className="native-emoji">➡️</span> Next Round
                         </button>
                     )}
                     <button className="btn btn-secondary" onClick={handleReset}>
-                        🔄 Reset
+                        <span className="native-emoji">🔄</span> Reset
                     </button>
                 </div>
             </div>
