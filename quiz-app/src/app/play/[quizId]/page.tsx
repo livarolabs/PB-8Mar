@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import NextImage from 'next/image';
 import { useParams } from 'next/navigation';
 import { subscribeToQuiz, joinQuiz, submitVote, setPlayerReady, setTutorialFinished } from '@/lib/db';
 import { Quiz, Player, Person } from '@/lib/types';
@@ -331,9 +332,9 @@ export default function PlayerPage() {
                             <div className="animate-in">
                                 <p style={{ fontSize: 14, marginBottom: 16, color: 'var(--text-secondary)' }}>{t.tutorialStep7}</p>
                                 <div style={{ marginBottom: 24, display: 'flex', justifyContent: 'center' }}>
-                                    <img src="/Kostya.png" alt="Demo" style={{ borderRadius: '50%', width: 140, height: 140, objectFit: 'cover', border: '4px solid var(--gold)', boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }} />
+                                    <NextImage src="/Kostya.png" alt="Demo" width={140} height={140} priority style={{ borderRadius: '50%', objectFit: 'cover', border: '4px solid var(--gold)', boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)' }} />
                                 </div>
-                                <div className="player-options" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                                <div className="player-options" style={{ gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                                     <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 12 }} onClick={() => handleDemoVote(true)}>{t.tutorialDemoOptionA}</button>
                                     <button className={`btn ${demoVoted ? 'btn-secondary' : 'btn-primary'}`} style={{ fontSize: 12 }} onClick={() => handleDemoVote(false)}>{t.tutorialDemoOptionB}</button>
                                 </div>
