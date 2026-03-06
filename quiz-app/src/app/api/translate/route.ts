@@ -33,7 +33,7 @@ English words: ${words.join(', ')}`;
             body: JSON.stringify({
                 model: 'deepseek-chat',
                 messages: [
-                    { role: 'system', content: 'You are a helpful translation assistant that returns only valid JSON.' },
+                    { role: 'system', content: 'You are a translation assistant. You MUST return ONLY a valid JSON object. Do not include any markdown backticks or extra text.' },
                     { role: 'user', content: prompt }
                 ],
                 response_format: { type: 'json_object' }
@@ -47,9 +47,23 @@ English words: ${words.join(', ')}`;
         }
 
         const data = await response.json();
-        const result = JSON.parse(data.choices[0].message.content);
+        let content = data.choices[0].message.content;
 
-        return NextResponse.json(result);
+        // Clean up markdown if present
+        if (content.includes('```')) {
+            content = content.replace(/```json\n?|```/g, '').trim();
+        }
+
+        try {
+            const result = JSON.parse(content);
+            return NextResponse.json(result);
+        } catch (parseError) {
+            console.error('Failed to parse DeepSeek JSON:', content);
+            return NextResponse.json({
+                error: 'Failed to parse translation result',
+                details: content
+            }, { status: 500 });
+        }
     } catch (error) {
         console.error('Translation error:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

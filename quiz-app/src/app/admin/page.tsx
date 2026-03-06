@@ -7,6 +7,111 @@ import { Quiz } from '@/lib/types';
 import { User } from 'firebase/auth';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 
+function WordTagInput({
+    words,
+    onChange,
+    placeholder,
+    label
+}: {
+    words: string[],
+    onChange: (words: string[]) => void,
+    placeholder: string,
+    label?: string
+}) {
+    const [inputValue, setInputValue] = useState('');
+
+    const addWord = (val: string) => {
+        const trimmed = val.trim();
+        if (trimmed && !words.includes(trimmed)) {
+            onChange([...words, trimmed]);
+        }
+        setInputValue('');
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            addWord(inputValue);
+        } else if (e.key === 'Backspace' && !inputValue && words.length > 0) {
+            removeWord(words.length - 1);
+        }
+    };
+
+    const removeWord = (index: number) => {
+        onChange(words.filter((_, i) => i !== index));
+    };
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {label && <label style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>}
+            <div
+                className="input"
+                style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    gap: 6,
+                    padding: '8px 12px',
+                    minHeight: '44px',
+                    alignItems: 'center'
+                }}
+            >
+                {words.map((word, i) => (
+                    <span
+                        key={i}
+                        style={{
+                            background: 'rgba(236, 72, 153, 0.15)',
+                            color: 'var(--pink)',
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            fontSize: '13px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            border: '1px solid rgba(236, 72, 153, 0.2)'
+                        }}
+                    >
+                        {word}
+                        <button
+                            onClick={() => removeWord(i)}
+                            style={{
+                                background: 'none',
+                                border: 'none',
+                                color: 'var(--pink)',
+                                cursor: 'pointer',
+                                fontSize: '14px',
+                                padding: 0,
+                                display: 'flex',
+                                alignItems: 'center',
+                                opacity: 0.7
+                            }}
+                            onMouseOver={(e) => (e.currentTarget.style.opacity = '1')}
+                            onMouseOut={(e) => (e.currentTarget.style.opacity = '0.7')}
+                        >
+                            ✕
+                        </button>
+                    </span>
+                ))}
+                <input
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onBlur={() => addWord(inputValue)}
+                    placeholder={words.length === 0 ? placeholder : ''}
+                    style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'white',
+                        outline: 'none',
+                        flex: 1,
+                        fontSize: '13px',
+                        minWidth: '60px'
+                    }}
+                />
+            </div>
+        </div>
+    );
+}
+
 function AdminDashboard() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -20,10 +125,10 @@ function AdminDashboard() {
     const [personName, setPersonName] = useState('');
     const [caricatureUrl1, setCaricatureUrl1] = useState('');
     const [caricatureUrl2, setCaricatureUrl2] = useState('');
-    const [personWordsHU, setPersonWordsHU] = useState('');
-    const [personWordsEN, setPersonWordsEN] = useState('');
-    const [personWordsUA, setPersonWordsUA] = useState('');
-    const [personWordsRU, setPersonWordsRU] = useState('');
+    const [personWordsHU, setPersonWordsHU] = useState<string[]>([]);
+    const [personWordsEN, setPersonWordsEN] = useState<string[]>([]);
+    const [personWordsUA, setPersonWordsUA] = useState<string[]>([]);
+    const [personWordsRU, setPersonWordsRU] = useState<string[]>([]);
     const [uploading, setUploading] = useState<'c1' | 'c2' | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
@@ -124,10 +229,10 @@ function AdminDashboard() {
         if (!quizId || !personName.trim() || !caricatureUrl1 || !caricatureUrl2) return;
 
         const words: Record<'en' | 'hu' | 'ua' | 'ru', string[]> = {
-            hu: personWordsHU.split(',').map(s => s.trim()).filter(Boolean),
-            en: personWordsEN.split(',').map(s => s.trim()).filter(Boolean),
-            ua: personWordsUA.split(',').map(s => s.trim()).filter(Boolean),
-            ru: personWordsRU.split(',').map(s => s.trim()).filter(Boolean),
+            hu: personWordsHU,
+            en: personWordsEN,
+            ua: personWordsUA,
+            ru: personWordsRU,
         };
 
         try {
@@ -135,10 +240,10 @@ function AdminDashboard() {
             setPersonName('');
             setCaricatureUrl1('');
             setCaricatureUrl2('');
-            setPersonWordsHU('');
-            setPersonWordsEN('');
-            setPersonWordsUA('');
-            setPersonWordsRU('');
+            setPersonWordsHU([]);
+            setPersonWordsEN([]);
+            setPersonWordsUA([]);
+            setPersonWordsRU([]);
             if (c1InputRef.current) c1InputRef.current.value = '';
             if (c2InputRef.current) c2InputRef.current.value = '';
         } catch (err: any) {
@@ -147,23 +252,25 @@ function AdminDashboard() {
     }, [quizId, personName, caricatureUrl1, caricatureUrl2, personWordsHU, personWordsEN, personWordsUA, personWordsRU]);
 
     const handleTranslate = useCallback(async () => {
-        if (!personWordsEN.trim()) return;
+        if (personWordsEN.length === 0) return;
 
         setIsTranslating(true);
         try {
-            const wordsArray = personWordsEN.split(',').map(s => s.trim()).filter(Boolean);
             const res = await fetch('/api/translate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ words: wordsArray })
+                body: JSON.stringify({ words: personWordsEN })
             });
 
-            if (!res.ok) throw new Error('Translation request failed');
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Translation request failed');
+            }
 
             const data = await res.json();
-            if (data.hu) setPersonWordsHU(data.hu.join(', '));
-            if (data.ua) setPersonWordsUA(data.ua.join(', '));
-            if (data.ru) setPersonWordsRU(data.ru.join(', '));
+            if (data.hu) setPersonWordsHU(data.hu);
+            if (data.ua) setPersonWordsUA(data.ua);
+            if (data.ru) setPersonWordsRU(data.ru);
         } catch (err: any) {
             showError(`Translation failed: ${err.message}`);
         } finally {
@@ -490,10 +597,14 @@ function AdminDashboard() {
                                 style={{ marginBottom: 12 }}
                             />
 
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Hungarian Words</label>
-                                    <input className="input" value={personWordsHU} onChange={e => setPersonWordsHU(e.target.value)} placeholder="szó1, szó2..." style={{ fontSize: 13 }} />
+                                    <WordTagInput
+                                        label="Hungarian Words"
+                                        words={personWordsHU}
+                                        onChange={setPersonWordsHU}
+                                        placeholder="szó1, Enter..."
+                                    />
                                 </div>
                                 <div>
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -502,20 +613,32 @@ function AdminDashboard() {
                                             className="btn btn-secondary"
                                             style={{ fontSize: 9, padding: '2px 8px', height: 'auto' }}
                                             onClick={handleTranslate}
-                                            disabled={isTranslating || !personWordsEN.trim()}
+                                            disabled={isTranslating || personWordsEN.length === 0}
                                         >
                                             {isTranslating ? '⌛ Translating...' : <><span className="native-emoji">✨</span> Auto-Translate</>}
                                         </button>
                                     </div>
-                                    <input className="input" value={personWordsEN} onChange={e => setPersonWordsEN(e.target.value)} placeholder="word1, word2..." style={{ fontSize: 13 }} />
+                                    <WordTagInput
+                                        words={personWordsEN}
+                                        onChange={setPersonWordsEN}
+                                        placeholder="word1, Enter..."
+                                    />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Ukrainian Words</label>
-                                    <input className="input" value={personWordsUA} onChange={e => setPersonWordsUA(e.target.value)} placeholder="слово1, слово2..." style={{ fontSize: 13 }} />
+                                    <WordTagInput
+                                        label="Ukrainian Words"
+                                        words={personWordsUA}
+                                        onChange={setPersonWordsUA}
+                                        placeholder="слово1, Enter..."
+                                    />
                                 </div>
                                 <div>
-                                    <label style={{ display: 'block', fontSize: 10, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase' }}>Russian Words</label>
-                                    <input className="input" value={personWordsRU} onChange={e => setPersonWordsRU(e.target.value)} placeholder="слово1, слово2..." style={{ fontSize: 13 }} />
+                                    <WordTagInput
+                                        label="Russian Words"
+                                        words={personWordsRU}
+                                        onChange={setPersonWordsRU}
+                                        placeholder="слово1, Enter..."
+                                    />
                                 </div>
                             </div>
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
