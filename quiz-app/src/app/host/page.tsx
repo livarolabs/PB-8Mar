@@ -102,12 +102,6 @@ function HostDashboard() {
         }
 
         // Mode: Countdown
-        const everyoneVoted = playersCount > 0 && votesCount >= playersCount;
-        if (everyoneVoted) {
-            setVotingEnded(true);
-            return;
-        }
-
         if (!round.votingEndsAt) {
             setVotingEnded(false);
             return;
@@ -471,10 +465,26 @@ function HostDashboard() {
                     ) : (
                         <>
                             {!votingEnded && currentRound.votingEndsAt && (
-                                <Countdown
-                                    endsAt={currentRound.votingEndsAt}
-                                    onComplete={() => setVotingEnded(true)}
-                                />
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+                                    <Countdown
+                                        endsAt={currentRound.votingEndsAt}
+                                        onComplete={() => setVotingEnded(true)}
+                                    />
+                                    {votesCount >= quiz.players.length && quiz.players.length > 0 && (
+                                        <div style={{
+                                            background: 'rgba(236, 72, 153, 0.15)',
+                                            color: 'var(--gold)',
+                                            padding: '8px 16px',
+                                            borderRadius: '20px',
+                                            fontSize: 14,
+                                            fontWeight: 700,
+                                            border: '1px solid var(--pink)',
+                                            animation: 'pulse 2s infinite'
+                                        }}>
+                                            🙌 Everyone has voted! You can skip now if you want.
+                                        </div>
+                                    )}
+                                </div>
                             )}
                             {votingEnded && (
                                 <div style={{ textAlign: 'center' }}>
