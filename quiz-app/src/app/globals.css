@@ -649,6 +649,66 @@ body {
   }
 }
 
+@keyframes zoomReveal {
+  from {
+    opacity: 0;
+    transform: scale(0.5) translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes glowPulse {
+
+  0%,
+  100% {
+    box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 40px rgba(236, 72, 153, 0.8);
+  }
+}
+
+@keyframes borderShimmer {
+
+  0%,
+  100% {
+    border-color: rgba(236, 72, 153, 0.4);
+  }
+
+  50% {
+    border-color: rgba(139, 92, 246, 0.8);
+  }
+}
+
 /* ── Player Screen ───────────────────────────────────────────── */
 .player-screen {
   min-height: 100vh;
