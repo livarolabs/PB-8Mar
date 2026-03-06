@@ -1,6 +1,7 @@
 'use client';
 
 import { Player } from '@/lib/types';
+import EmojiText from '@/components/EmojiText';
 
 interface LeaderboardProps {
     players: Player[];
@@ -50,7 +51,7 @@ export default function Leaderboard({ players, currentPlayerId, showAll = true }
                                 )}
                             </div>
                             <div className="leaderboard-name">
-                                {player.displayName}
+                                <EmojiText text={player.displayName} />
                                 {isCurrentPlayer && <span className="leaderboard-you"> (You)</span>}
                             </div>
                             <div className="leaderboard-score">

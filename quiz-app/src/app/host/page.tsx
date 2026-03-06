@@ -7,6 +7,7 @@ import { Quiz } from '@/lib/types';
 import Countdown from '@/components/Countdown';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
 import Leaderboard from '@/components/Leaderboard';
+import EmojiText from '@/components/EmojiText';
 
 function Confetti() {
     const pieces = useMemo(() => {
@@ -297,7 +298,7 @@ function HostDashboard() {
                     textAlign: 'center',
                     marginBottom: 8,
                 }}>
-                    <span className="native-emoji">💐</span> <span className="text-gradient">{quiz.title}</span>
+                    <span className="native-emoji">💐</span> <span className="text-gradient"><EmojiText text={quiz.title} /></span>
                 </h1>
                 <p style={{
                     color: 'var(--text-secondary)',

@@ -8,6 +8,7 @@ import { Quiz, Player, Person } from '@/lib/types';
 import Countdown from '@/components/Countdown';
 import Leaderboard from '@/components/Leaderboard';
 import { Language, translations } from '@/lib/translations';
+import EmojiText from '@/components/EmojiText';
 
 export default function PlayerPage() {
     const params = useParams();
@@ -230,7 +231,7 @@ export default function PlayerPage() {
                     <div style={{ marginBottom: 16 }}>
                         <span className="native-emoji" style={{ fontSize: 48 }}>🌍</span>
                     </div>
-                    <h1 className="player-join-title">{t.welcomeTitle}</h1>
+                    <h1 className="player-join-title"><EmojiText text={t.welcomeTitle} /></h1>
 
                     <div style={{ marginBottom: 24, textAlign: 'center' }}>
                         <p style={{ color: 'var(--text-muted)', fontSize: 12, marginBottom: 8, textTransform: 'uppercase', letterSpacing: '1px' }}>
@@ -351,7 +352,7 @@ export default function PlayerPage() {
                                 </div>
                                 {demoVoted && (
                                     <p className="animate-in" style={{ marginTop: 12, color: 'var(--gold)', fontWeight: 700, fontSize: 14 }}>
-                                        <span className="native-emoji-wrapper">{demoScore > 0 ? t.tutorialDemoCorrect : t.tutorialDemoWrong}</span>
+                                        <EmojiText text={demoScore > 0 ? t.tutorialDemoCorrect : t.tutorialDemoWrong} />
                                     </p>
                                 )}
                             </div>

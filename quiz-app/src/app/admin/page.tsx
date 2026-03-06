@@ -6,6 +6,7 @@ import { subscribeToQuiz, createQuiz, addPerson, removePerson, publishQuiz, dele
 import { Quiz } from '@/lib/types';
 import { User } from 'firebase/auth';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
+import EmojiText from '@/components/EmojiText';
 
 function WordTagInput({
     words,
@@ -474,7 +475,7 @@ function AdminDashboard() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
                     <div>
-                        <h1 className="page-title" style={{ marginBottom: 4 }}><span className="native-emoji">👑</span> {quiz.title}</h1>
+                        <h1 className="page-title" style={{ marginBottom: 4 }}>👑 <EmojiText text={quiz.title} /></h1>
                         <p className="page-subtitle" style={{ marginBottom: 0 }}>Configure rounds and manage publishing</p>
                     </div>
                     {quiz.status === 'draft' && (
