@@ -44,6 +44,7 @@ export interface Quiz {
   status: 'draft' | 'live' | 'finished';
   currentRoundIndex: number;
   ownerId: string;
+  joinCode?: string; // Optional random string for forcing new player sessions
   settings: {
     votingDuration: number; // in seconds
     votingMode: 'countdown' | 'all_voted';

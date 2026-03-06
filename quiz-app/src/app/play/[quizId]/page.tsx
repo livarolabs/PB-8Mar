@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import NextImage from 'next/image';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { subscribeToQuiz, joinQuiz, submitVote, setPlayerReady, setTutorialFinished } from '@/lib/db';
 import { Quiz, Player, Person } from '@/lib/types';
 import Countdown from '@/components/Countdown';
@@ -12,7 +12,9 @@ import EmojiText from '@/components/EmojiText';
 
 export default function PlayerPage() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const quizId = params.quizId as string;
+    const urlJoinCode = searchParams.get('j');
 
     const [quiz, setQuiz] = useState<Quiz | null>(null);
     const [player, setPlayer] = useState<Player | null>(null);
@@ -66,15 +68,25 @@ export default function PlayerPage() {
         preloadPersonImages(quiz.rounds[currentIndex + 1]?.personId);
     }, [quiz?.rounds, quiz?.currentRoundIndex, quiz?.persons]);
 
-    // Restore player from localStorage
+    // Restore player from localStorage unless the join code mismatched
     useEffect(() => {
-        const saved = localStorage.getItem(`player_${quizId}`);
-        if (saved) {
+        const savedPlayerStr = localStorage.getItem(`player_${quizId}`);
+        const savedJoinCode = localStorage.getItem(`player_joincode_${quizId}`);
+
+        // If a URL parameter is forcing a specific join code and it differs from our local cache, wipe it
+        if (urlJoinCode && savedJoinCode && savedJoinCode !== urlJoinCode) {
+            localStorage.removeItem(`player_${quizId}`);
+            localStorage.setItem(`player_joincode_${quizId}`, urlJoinCode);
+            setPlayer(null);
+            return;
+        }
+
+        if (savedPlayerStr) {
             try {
-                setPlayer(JSON.parse(saved));
+                setPlayer(JSON.parse(savedPlayerStr));
             } catch { }
         }
-    }, [quizId]);
+    }, [quizId, urlJoinCode]);
 
     // Subscribe to Firebase RTDB for quiz state
     useEffect(() => {
@@ -125,11 +137,19 @@ export default function PlayerPage() {
         return () => clearInterval(interval);
     }, [quiz]);
 
-    // Update player score from quiz state
+    // Update player score from quiz state, or handle deletion
     useEffect(() => {
         if (!quiz || !player) return;
         const updatedPlayer = quiz.players.find(p => p.id === player.id);
-        if (updatedPlayer && updatedPlayer.score !== player.score) {
+
+        if (!updatedPlayer) {
+            // The player was deleted from the backend (e.g. by Restart Quiz)
+            setPlayer(null);
+            localStorage.removeItem(`player_${quizId}`);
+            return;
+        }
+
+        if (updatedPlayer.score !== player.score) {
             const newPlayer = { ...player, score: updatedPlayer.score };
             setPlayer(newPlayer);
             localStorage.setItem(`player_${quizId}`, JSON.stringify(newPlayer));
@@ -169,6 +189,10 @@ export default function PlayerPage() {
             if (newPlayer) {
                 setPlayer(newPlayer);
                 localStorage.setItem(`player_${quizId}`, JSON.stringify(newPlayer));
+                if (urlJoinCode) {
+                    localStorage.setItem(`player_joincode_${quizId}`, urlJoinCode);
+                }
+
                 if (!newPlayer.isTutorialFinished) {
                     setShowTutorial(true);
                 }

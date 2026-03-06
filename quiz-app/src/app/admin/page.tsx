@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { createQuiz, deleteQuiz, publishQuiz, addPerson, updatePerson, removePerson, updateQuizSettings, uploadImage, subscribeToQuiz, listQuizzes, onAuthChange, loginWithGoogle, logout, restartQuiz } from '@/lib/db';
+import { createQuiz, deleteQuiz, publishQuiz, addPerson, updatePerson, removePerson, updateQuizSettings, uploadImage, subscribeToQuiz, listQuizzes, onAuthChange, loginWithGoogle, logout, restartQuiz, regenerateJoinCode } from '@/lib/db';
 import { Person, Quiz } from '@/lib/types';
 import { User } from 'firebase/auth';
 import QRCodeDisplay from '@/components/QRCodeDisplay';
@@ -408,8 +408,19 @@ function AdminDashboard() {
         }
     }, []);
 
+    const handleRegenerateJoinCode = useCallback(async () => {
+        if (!quizId) return;
+        if (!confirm('This will invalidate the current QR code and force players scanning the new code to create a brand new session. Existing players will not be disconnected until they scan the new code. Continue?')) return;
+        try {
+            await regenerateJoinCode(quizId);
+            setSuccess('New QR Code generated!');
+        } catch (err: any) {
+            showError(`Failed to generate new code: ${err.message}`);
+        }
+    }, [quizId]);
+
     const joinUrl = quiz && baseUrl
-        ? `${baseUrl}/play/${quiz.id}`
+        ? `${baseUrl}/play/${quiz.id}${quiz.joinCode ? `?j=${quiz.joinCode}` : ''}`
         : '';
 
     const hostUrl = quiz && baseUrl
@@ -934,7 +945,17 @@ function AdminDashboard() {
                                 {quiz.persons.length} rounds • {quiz.players.length} players joined
                             </p>
                             {joinUrl && (
-                                <QRCodeDisplay url={joinUrl} size={220} label="Scan to Join" />
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+                                    <QRCodeDisplay url={joinUrl} size={220} label="Scan to Join" />
+                                    <button
+                                        className="btn btn-secondary"
+                                        onClick={handleRegenerateJoinCode}
+                                        style={{ fontSize: 13, border: '1px solid var(--border-color)' }}
+                                        title="Forces old players to rejoin as new players when they scan this."
+                                    >
+                                        <span className="native-emoji">🔄</span> Generate New QR Code
+                                    </button>
+                                </div>
                             )}
                             <div style={{ marginTop: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
                                 <a href={hostUrl} target="_blank" className="btn btn-primary btn-large">

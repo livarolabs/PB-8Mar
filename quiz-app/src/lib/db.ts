@@ -69,6 +69,13 @@ export async function listQuizzes(ownerId?: string): Promise<Quiz[]> {
     return quizzes.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)) as Quiz[];
 }
 
+// Regenerate Quiz Join Code
+export async function regenerateJoinCode(quizId: string) {
+    const newJoinCode = Math.random().toString(36).substring(2, 8); // Random 6 character alphanumeric
+    await restPut(`quizzes/${quizId}/joinCode`, newJoinCode);
+    return newJoinCode;
+}
+
 // Listener for a specific quiz via REST polling
 // We use polling (every 1.5s) instead of Firebase WebSockets (onValue) 
 // because WebSockets frequently drop or get blocked on mobile browsers.
