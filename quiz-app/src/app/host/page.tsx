@@ -449,22 +449,25 @@ function HostDashboard() {
                         margin: '0 auto 40px',
                         padding: 20
                     }}>
-                        {(currentPerson.words?.hu || []).map((word, i) => (
-                            <div key={i} className="glass-card" style={{
-                                padding: '16px 32px',
-                                fontSize: 32,
-                                fontWeight: 800,
-                                background: 'linear-gradient(135deg, var(--pink), var(--gold))',
-                                color: 'white',
-                                borderRadius: 50,
-                                boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
-                                animation: `zoomReveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.15}s forwards`,
-                                opacity: 0,
-                                transform: 'scale(0)'
-                            }}>
-                                {word}
-                            </div>
-                        ))}
+                        {((currentPerson.words?.en?.length ? currentPerson.words.en :
+                            currentPerson.words?.hu?.length ? currentPerson.words.hu :
+                                currentPerson.words?.ua?.length ? currentPerson.words.ua :
+                                    currentPerson.words?.ru) || []).map((word, i) => (
+                                        <div key={i} className="glass-card" style={{
+                                            padding: '16px 32px',
+                                            fontSize: 32,
+                                            fontWeight: 800,
+                                            background: 'linear-gradient(135deg, var(--pink), var(--gold))',
+                                            color: 'white',
+                                            borderRadius: 50,
+                                            boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+                                            animation: `zoomReveal 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.15}s forwards`,
+                                            opacity: 0,
+                                            transform: 'scale(0)'
+                                        }}>
+                                            {word}
+                                        </div>
+                                    ))}
                     </div>
                 )}
 
